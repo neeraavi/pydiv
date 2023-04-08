@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QApplication
 import sys
 
 import dividends
+from SummaryModel import SummaryModel
 from divui import Ui_MainWindow
 import transactions
 from datetime import datetime
@@ -40,13 +41,22 @@ class Window(QtWidgets.QMainWindow):
         self.closeShortcut = QtWidgets.QShortcut(QtGui.QKeySequence(QtGui.QKeySequence.StandardKey.Cancel), self)
         self.closeShortcut.activated.connect(self.reset_main_filter)
         self.ui.summaryView.setStyleSheet("alternate-background-color: #fefae0; background-color: white;")
+        self.ui.showClosedPositions.stateChanged.connect(self.show_closed_positions_changed)
+
+    def show_closed_positions_changed(self):
+        if not self.ui.showClosedPositions.isChecked():
+            self.sourceModel = SummaryModel(self.activePositions, self.summaryHeader)
+        else:
+            self.sourceModel = SummaryModel(self.transactions, self.summaryHeader)
+        self.proxyModel.setSourceModel(self.sourceModel)
 
     def fill_summary_table(self):
         # transaction calculations
         t = transactions.Transactions(self.startYear, self.pathPrefix)
         t.fill_transactions()
         self.update_transaction_calendar(t)
-        (self.transactions, self.transactionMap, self.totalInvested, summaryHeader) = t.get_transaction_results()
+        (self.transactions, self.transactionMap, self.totalInvested, self.summaryHeader) = t.get_transaction_results()
+        self.activePositions = [x for x in self.transactions if x[1] != '*']
 
         # dividend calculations
         d = dividends.Dividends(self.startYear, self.pathPrefix, self.transactions)
@@ -54,10 +64,9 @@ class Window(QtWidgets.QMainWindow):
         (self.dividendMap, self.dividendHeader) = d.get_dividend_results()
 
         # display transactions
-        self.sourceModel = TableModel(self.transactions, summaryHeader)
         self.proxyModel = QtCore.QSortFilterProxyModel(self)
+        self.show_closed_positions_changed()
         self.proxyModel.setFilterKeyColumn(-1)  # Search all columns.
-        self.proxyModel.setSourceModel(self.sourceModel)
         self.proxyModel.sort(0, Qt.AscendingOrder)
         self.proxyModel.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.ui.mainFilter.textChanged.connect(self.ticker_filter_changed)

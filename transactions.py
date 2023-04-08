@@ -63,6 +63,7 @@ class Transactions:
             cps = "{:.2f}".format(inv / nos) if nos != 0 else ' '
             t_list.append(['Total', len(t_list), '', nos, inv, cps, 'xx'])
         self.totalInvested = round(self.totalInvested)
+        yoc = ''
         for item in self.transactions:
             ticker, nos, invested = item
             if nos == 0:
@@ -71,8 +72,11 @@ class Transactions:
             else:
                 status = ' '
                 alloc = "{:.2f} %".format(invested / self.totalInvested * 100)
-            item.insert(1, status)
             item.append(alloc)
+            item.insert(7, '0.00%')  # yoc_a
+            item.insert(6, '0.00%')  # yoc_b
+            item.insert(5, '0')  # ann_a
+            item.insert(1, status)
         print(self.totalInvested)
         self.cleanup_transaction_calendar()
         self.process_names()
@@ -116,7 +120,8 @@ class Transactions:
         return fileprocessor.process_file(f, self.transactions_processor, self.create_transactions_table_from_list)
 
     def get_transaction_results(self):
-        summary_header = ['Ticker', '.', '#', 'Invested', 'Alloc', 'Name', 'Sector']
+        summary_header = ['Ticker', '.', '#', 'Invested', 'Alloc', 'Yoc_A', 'Annual_A', 'Yoc_B', 'Name', 'Sector', 'b1',
+                          'b2']
         return self.transactions, self.transactionMap, self.totalInvested, summary_header
 
     def get_investment_calendar(self):

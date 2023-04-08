@@ -8,8 +8,6 @@ class Dividends:
         self.transactions_list = transactions_list
         self.tax_factor = (1 - .27)  # Bruttodividenden – 26,375 % = Nettodividenden)
 
-        # self.totalInvested = 0
-
         self.dividends = []
         self.dividendsMap = {}
         self.dividendsCalendar = []
@@ -67,13 +65,37 @@ class Dividends:
             before_total = sum(row[5] for row in t_list)
             after_total = sum(row[6] for row in t_list)
             dps = t_list[-1][4]
+            f = t_list[0][1]
+            last_div_before = t_list[-1][5]
+            last_div_nos = t_list[-1][3]
             t_list.append(['Total', '~1', '~2', '~3', '~4', before_total, after_total, '~7'])
+            last_effective_dps = last_div_before / last_div_nos
             for t_item in self.transactions_list:
+                # ['Ticker', '.', '#', 'Invested', 'Alloc', 'Yoc_A', 'Annual_A', 'Yoc_B', 'Name', 'Sector', 'b1', 'b2']
+                #     0       1    2       3          4        5        6          7
                 if t_item[0] == ticker:
                     nos = t_item[2]
-                    before_next = dps * nos
-                    after_next = before_next * self.tax_factor
-                    t_list.append(['Next', '~1', '~2', nos, dps, before_next, after_next, '~7'])
+                    next_before = last_effective_dps * nos
+                    next_after = next_before * self.tax_factor
+                    t_list.append(['Next', '~1', '~2', nos, dps, next_before, next_after, '~7'])
+                    if nos > 0:
+                        inv = t_item[3]
+                        if inv != 0:
+                            yoc_b = next_before / inv * 100 * self.freq_multiplier(f)
+                            next_annual_a = next_after * self.freq_multiplier(f)
+                            yoc_a = next_annual_a / inv * 100
+                            t_item[5] = "{:.2f} %".format(yoc_a)
+                            t_item[6] = "{:.0f}".format(next_annual_a)
+                            t_item[7] = "{:.2f} %".format(yoc_b)
+                        # t_item.insert(6, yoc_a)
+
+    def freq_multiplier(self, f):
+        if f == 'A': return 1
+        if f == 'B': return 2
+        if f == 'Q': return 4
+        if f == 'M': return 12
+        print('Unknown freq:', f)
+        return 0
 
     def get_dividend_results(self):
         dividend_header = ['Ticker', 'F', 'YYYY-MM', '#', 'DPS', 'Before', 'After', 'Where']

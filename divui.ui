@@ -157,6 +157,19 @@
        </rect>
       </property>
      </widget>
+     <widget class="QCheckBox" name="showClosedPositions">
+      <property name="geometry">
+       <rect>
+        <x>150</x>
+        <y>330</y>
+        <width>171</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Show closed positions</string>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="tab_2">
      <attribute name="title">

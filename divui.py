@@ -69,6 +69,9 @@ class Ui_MainWindow(object):
         self.mainFilter = QtWidgets.QLineEdit(self.tab_1)
         self.mainFilter.setGeometry(QtCore.QRect(20, 330, 113, 25))
         self.mainFilter.setObjectName("mainFilter")
+        self.showClosedPositions = QtWidgets.QCheckBox(self.tab_1)
+        self.showClosedPositions.setGeometry(QtCore.QRect(150, 330, 171, 23))
+        self.showClosedPositions.setObjectName("showClosedPositions")
         self.tabWidget.addTab(self.tab_1, "")
         self.tab_2 = QtWidgets.QWidget()
         self.tab_2.setObjectName("tab_2")
@@ -135,6 +138,7 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        self.showClosedPositions.setText(_translate("MainWindow", "Show closed positions"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_1), _translate("MainWindow", "Summary"))
         self.dividendCalendar.setTitle(_translate("MainWindow", "Dividend calendar"))
         self.beforeTax.setText(_translate("MainWindow", "Before tax"))
