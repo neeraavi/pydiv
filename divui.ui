@@ -41,8 +41,8 @@
       </property>
       <property name="font">
        <font>
-        <family>Noto Sans Mono</family>
-        <pointsize>9</pointsize>
+        <family>Ubuntu</family>
+        <pointsize>11</pointsize>
        </font>
       </property>
       <property name="autoFillBackground">
@@ -96,14 +96,14 @@
        <rect>
         <x>10</x>
         <y>360</y>
-        <width>391</width>
+        <width>441</width>
         <height>281</height>
        </rect>
       </property>
       <property name="font">
        <font>
-        <family>Arial</family>
-        <pointsize>10</pointsize>
+        <family>Ubuntu</family>
+        <pointsize>11</pointsize>
        </font>
       </property>
       <property name="sizeAdjustPolicy">
@@ -125,16 +125,16 @@
      <widget class="QTableView" name="dividendsView">
       <property name="geometry">
        <rect>
-        <x>410</x>
+        <x>460</x>
         <y>360</y>
-        <width>681</width>
+        <width>631</width>
         <height>281</height>
        </rect>
       </property>
       <property name="font">
        <font>
-        <family>Arial</family>
-        <pointsize>8</pointsize>
+        <family>Ubuntu</family>
+        <pointsize>11</pointsize>
        </font>
       </property>
       <attribute name="verticalHeaderVisible">

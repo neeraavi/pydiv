@@ -4,12 +4,15 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication
 import sys
+
+import dividends
 from divui import Ui_MainWindow
 import transactions
 from datetime import datetime
 from TableModel import TableModel
 from CalendarModel import CalendarModel
 from CalendarDetailsModel import CalendarDetailsModel
+from DividendModel import DividendModel
 
 
 class Window(QtWidgets.QMainWindow):
@@ -39,12 +42,18 @@ class Window(QtWidgets.QMainWindow):
         self.ui.summaryView.setStyleSheet("alternate-background-color: #fefae0; background-color: white;")
 
     def fill_summary_table(self):
-        t = transactions.Transactions(self.startYear)
-        t.fill_transactions(self.pathPrefix)
-
+        # transaction calculations
+        t = transactions.Transactions(self.startYear, self.pathPrefix)
+        t.fill_transactions()
         self.update_transaction_calendar(t)
-
         (self.transactions, self.transactionMap, self.totalInvested, summaryHeader) = t.get_transaction_results()
+
+        # dividend calculations
+        d = dividends.Dividends(self.startYear, self.pathPrefix, self.transactions)
+        d.fill_dividends()
+        (self.dividendMap, self.dividendHeader) = d.get_dividend_results()
+
+        # display transactions
         self.sourceModel = TableModel(self.transactions, summaryHeader)
         self.proxyModel = QtCore.QSortFilterProxyModel(self)
         self.proxyModel.setFilterKeyColumn(-1)  # Search all columns.
@@ -68,15 +77,9 @@ class Window(QtWidgets.QMainWindow):
         proxyModel = QtCore.QSortFilterProxyModel(self)
         proxyModel.setFilterKeyColumn(-1)  # Search all columns.
         proxyModel.setSourceModel(self.investmentCalendarModel)
-        # proxyModel.sort(2, Qt.AscendingOrder)
         self.ui.investmentCalendarView.setModel(proxyModel)
-        # self.ui.investmentCalendarView.selectionModel().selectionChanged.connect(self.main_selection_changed)
-        # self.ui.investmentCalendarView.show()
-        # self.ui.investmentCalendarView.setModel(self.proxyModel)
         self.ui.investmentCalendarView.selectionModel().selectionChanged.connect(self.inv_cal_selection_changed)
-
         self.ui.investmentCalendarView.horizontalHeader().setStretchLastSection(False)
-        # self.ui.investmentCalendarView.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.ui.investmentCalendarView.resizeColumnsToContents()
         self.ui.investmentCalendarView.setStyleSheet("alternate-background-color: #fefae0; background-color: white;")
         self.ui.investmentCalendarView.clicked.connect(self.investment_calendar_clicked)
@@ -116,6 +119,19 @@ class Window(QtWidgets.QMainWindow):
     def ticker_filter_changed(self, new_filter):
         self.proxyModel.setFilterFixedString(new_filter)
         self.display_filtered_transactions(new_filter)
+        self.display_filtered_dividends(new_filter)
+
+    def display_filtered_dividends(self, ticker):
+        if ticker not in self.dividendMap:
+            return
+        filtered = self.dividendMap[ticker]
+        # print(ticker, filtered)
+        self.dividendSourceModel = DividendModel(filtered, self.dividendHeader)
+        self.ui.dividendsView.setModel(self.dividendSourceModel)
+        # self.ui.transactionsView.setColumnHidden(6, True)
+        self.ui.dividendsView.resizeColumnsToContents()
+        self.ui.dividendsView.scrollToBottom()
+        self.ui.dividendsView.show()
 
     def display_filtered_transactions(self, ticker):
         if ticker not in self.transactionMap:
@@ -135,6 +151,7 @@ class Window(QtWidgets.QMainWindow):
             ticker = selected.indexes()[0].data()
             print("selected: ", ticker)
             self.display_filtered_transactions(ticker)
+            self.display_filtered_dividends(ticker)
 
 
 def create_app():

@@ -1,23 +1,17 @@
 from datetime import datetime
 import calendar
-
-
-def process_file(filename, line_processor, meta_processor):
-    with open(filename) as file:
-        for line in file:
-            line_processor(line.rstrip())
-    return meta_processor()
+import fileprocessor
 
 
 class Transactions:
-    def __init__(self, start):
-        self.prefix = None
+    def __init__(self, start_year, prefix):
+        self.prefix = prefix
         self.totalInvested = 0
         self.transactions = []
         self.transactionMap = {}
         self.investmentCalendar = []
         self.investmentCalendarMap = {}
-        self.startYear = start
+        self.startYear = start_year
         self.currentMonth = None
         self.currentYear = None
         self.now = None
@@ -96,9 +90,7 @@ class Transactions:
                 inner_list[self.startYear - y - 1] = self.investmentCalendarMap[ym]
         total_row = [sum(i) for i in zip(*self.investmentCalendar)]
         self.investmentCalendar.append(total_row)
-        # sigma_row_empty = [x * 0 for x in total_row]
-        sigma_row = [x * 0 for x in total_row]
-        # self.investmentCalendar.append(sigma_row_empty)
+        sigma_row = [0 for x in total_row]
         sigma_row[0] = sum(total_row)
         sigma_row[2] = 'ϕ'
         sigma_row[3] = round(sigma_row[0] / self.numOfYears)
@@ -119,10 +111,9 @@ class Transactions:
                     if ticker == t[0]:
                         t.extend([name, sector])
 
-    def fill_transactions(self, prefix):
-        self.prefix = prefix
+    def fill_transactions(self):
         f = self.prefix + '/akt.txt'
-        return process_file(f, self.transactions_processor, self.create_transactions_table_from_list)
+        return fileprocessor.process_file(f, self.transactions_processor, self.create_transactions_table_from_list)
 
     def get_transaction_results(self):
         summary_header = ['Ticker', '.', '#', 'Invested', 'Alloc', 'Name', 'Sector']
