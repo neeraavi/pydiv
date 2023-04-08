@@ -75,9 +75,9 @@ class Transactions:
             item.append(alloc)
             item.insert(7, '0.00%')  # yoc_a
             item.insert(6, '0.00%')  # yoc_b
-            item.insert(5, '0')  # ann_a
+            item.insert(5, 0)  # ann_a
             item.insert(1, status)
-        print(self.totalInvested)
+        print(self.totalInvested, '##')
         self.cleanup_transaction_calendar()
         self.process_names()
 
@@ -98,7 +98,7 @@ class Transactions:
         sigma_row[0] = sum(total_row)
         sigma_row[2] = 'ϕ'
         sigma_row[3] = round(sigma_row[0] / self.numOfYears)
-        print(sum(total_row))
+        # print(sum(total_row))
         self.investmentCalendar.append(sigma_row)
         print(total_row)
 

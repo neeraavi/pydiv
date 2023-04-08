@@ -13,6 +13,7 @@ class SummaryModel(QtCore.QAbstractTableModel):
         if not index.isValid():
             return None
         d = self._data[index.row()]
+        col = index.column()
         if role == Qt.BackgroundRole:
             if 'Total' in str(d[0]):
                 return QtGui.QColor('#ffe4c4')
@@ -21,7 +22,7 @@ class SummaryModel(QtCore.QAbstractTableModel):
                 return QtGui.QColor('#9c6644')
         if role == Qt.TextAlignmentRole:
             colNum = index.column()
-            return Qt.AlignLeft if (colNum < 2 or colNum > 4) else Qt.AlignRight
+            return Qt.AlignLeft if (colNum < 2 or colNum > 7) else Qt.AlignRight
         if role != Qt.ItemDataRole.DisplayRole:
             # for all roles you're not interested in return python's None
             # which is interpreted as an invalid QVariant value

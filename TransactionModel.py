@@ -2,9 +2,9 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import Qt
 
 
-class TableModel(QtCore.QAbstractTableModel):
+class TransactionModel(QtCore.QAbstractTableModel):
     def __init__(self, data, hlabels, vlabels=None):
-        super(TableModel, self).__init__()
+        super(TransactionModel, self).__init__()
         self._data = data
         self.horizontal_header_labels = hlabels
         self.vertical_header_labels = vlabels
@@ -21,11 +21,14 @@ class TableModel(QtCore.QAbstractTableModel):
                 return QtGui.QColor('#9c6644')
         if role == Qt.TextAlignmentRole:
             colNum = index.column()
-            return Qt.AlignLeft if (colNum < 2 or colNum > 4) else Qt.AlignRight
+            return Qt.AlignLeft if (colNum < 2) else Qt.AlignRight
         if role != Qt.ItemDataRole.DisplayRole:
             # for all roles you're not interested in return python's None
             # which is interpreted as an invalid QVariant value
             return None
+        col = index.column()
+        if col == 4:
+            return "{:.2f}".format(self._data[index.row()][col])
         return self._data[index.row()][index.column()]
 
     def rowCount(self, index):

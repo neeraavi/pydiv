@@ -10,7 +10,7 @@ from SummaryModel import SummaryModel
 from divui import Ui_MainWindow
 import transactions
 from datetime import datetime
-from TableModel import TableModel
+from TransactionModel import TransactionModel
 from CalendarModel import CalendarModel
 from CalendarDetailsModel import CalendarDetailsModel
 from DividendModel import DividendModel
@@ -22,7 +22,7 @@ class Window(QtWidgets.QMainWindow):
         self.now = datetime.now()
         self.startYear = 2015
         self.totalInvested = 0
-        self.transactions = None
+        self.summary = None
         self.transactionMap = {}
         self.transactionsProxyModel = None
         self.transactionsSourceModel = None
@@ -45,9 +45,13 @@ class Window(QtWidgets.QMainWindow):
 
     def show_closed_positions_changed(self):
         if not self.ui.showClosedPositions.isChecked():
-            self.sourceModel = SummaryModel(self.activePositions, self.summaryHeader)
+            self.selected_summary = self.summary_active_positions_only
+            self.visible_tickers = self._visible_tickers_active_only
         else:
-            self.sourceModel = SummaryModel(self.transactions, self.summaryHeader)
+            self.selected_summary = self.summary
+            self.visible_tickers = self._visible_tickers_all
+
+        self.sourceModel = SummaryModel(self.selected_summary, self.summaryHeader)
         self.proxyModel.setSourceModel(self.sourceModel)
 
     def fill_summary_table(self):
@@ -55,11 +59,13 @@ class Window(QtWidgets.QMainWindow):
         t = transactions.Transactions(self.startYear, self.pathPrefix)
         t.fill_transactions()
         self.update_transaction_calendar(t)
-        (self.transactions, self.transactionMap, self.totalInvested, self.summaryHeader) = t.get_transaction_results()
-        self.activePositions = [x for x in self.transactions if x[1] != '*']
+        (self.summary, self.transactionMap, self.totalInvested, self.summaryHeader) = t.get_transaction_results()
+        self.summary_active_positions_only = [x for x in self.summary if x[1] != '*']
+        self._visible_tickers_all = [x[0] for x in self.summary]
+        self._visible_tickers_active_only = [x[0] for x in self.summary if x[1] != '*']
 
         # dividend calculations
-        d = dividends.Dividends(self.startYear, self.pathPrefix, self.transactions)
+        d = dividends.Dividends(self.startYear, self.pathPrefix, self.summary, self.totalInvested)
         d.fill_dividends()
         (self.dividendMap, self.dividendHeader) = d.get_dividend_results()
 
@@ -131,8 +137,10 @@ class Window(QtWidgets.QMainWindow):
         self.display_filtered_dividends(new_filter)
 
     def display_filtered_dividends(self, ticker):
-        if ticker not in self.dividendMap:
+        if ticker not in self.dividendMap or ticker not in self.visible_tickers:
+            self.ui.dividendsView.setVisible(False)
             return
+
         filtered = self.dividendMap[ticker]
         # print(ticker, filtered)
         self.dividendSourceModel = DividendModel(filtered, self.dividendHeader)
@@ -143,12 +151,14 @@ class Window(QtWidgets.QMainWindow):
         self.ui.dividendsView.show()
 
     def display_filtered_transactions(self, ticker):
-        if ticker not in self.transactionMap:
+        if ticker not in self.transactionMap or ticker not in self.visible_tickers:
+            self.ui.transactionsView.setVisible(False)
             return
+
         filtered = self.transactionMap[ticker]
         # print(ticker, filtered)
-        self.transactionsSourceModel = TableModel(filtered,
-                                                  ['Ticker', 'B/S', 'Date', '#', 'Cost', 'CPS', 'Sign', 'z'])
+        self.transactionsSourceModel = TransactionModel(filtered,
+                                                        ['Ticker', 'B/S', 'Date', '#', 'Cost', 'CPS', 'Sign', 'z'])
         self.ui.transactionsView.setModel(self.transactionsSourceModel)
         self.ui.transactionsView.setColumnHidden(6, True)
         self.ui.transactionsView.resizeColumnsToContents()

@@ -1,9 +1,9 @@
-from TableModel import TableModel
+from TransactionModel import TransactionModel
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import Qt
 
 
-class CalendarModel(TableModel):
+class CalendarModel(TransactionModel):
     def __init__(self, data, hlabels, vlabels):
         super(CalendarModel, self).__init__(data, hlabels, vlabels)
 

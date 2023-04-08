@@ -1,9 +1,9 @@
-from TableModel import TableModel
+from TransactionModel import TransactionModel
 from PyQt5 import QtGui
 from PyQt5.QtCore import Qt
 
 
-class DividendModel(TableModel):
+class DividendModel(TransactionModel):
     def __init__(self, data, hlabels, vlabels=[]):
         super(DividendModel, self).__init__(data, hlabels, vlabels)
 
@@ -17,11 +17,11 @@ class DividendModel(TableModel):
             if 'Total' in str(d[0]):
                 return QtGui.QColor('#ffe4c4')
             if 'Next' in str(d[0]):
-                return QtGui.QColor('#dde5b6')
-            if index.row() % 2 == 0:
-                return QtGui.QColor('#ffffff')
-            else:
-                return QtGui.QColor('#f0ead2')
+                return QtGui.QColor('#faedcd')
+            # if index.row() % 2 == 0:
+            return QtGui.QColor('#ffffff')
+            # else:
+            #    return QtGui.QColor('#f0ead2')
             # if index.row() == 13:
             #    return QtGui.QColor('#e9edc9')
         if role == Qt.ForegroundRole:
@@ -34,4 +34,12 @@ class DividendModel(TableModel):
             # for all roles you're not interested in return python's None
             # which is interpreted as an invalid QVariant value
             return None
+        col = index.column()
+        if col == 4:
+            d = self._data[index.row()][index.column()]
+            if isinstance(d, float):
+                return "{:.3f}".format(d)
+            return d
+        if col == 5 or col == 6:
+            return "{:.2f}".format(self._data[index.row()][index.column()])
         return self._data[index.row()][index.column()]
