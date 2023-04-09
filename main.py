@@ -2,7 +2,7 @@ from operator import itemgetter
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QHeaderView
+from PyQt5.QtWidgets import QApplication, QHeaderView, QLabel, QFrame
 import sys
 
 import dividends
@@ -33,7 +33,7 @@ class Window(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
         self.ui.btn_1.setText("ff")
         self.ui.btn_1.clicked.connect(self.close)
-        self.fill_summary_table()
+
         self.shortcut = QtWidgets.QShortcut(QtGui.QKeySequence(QtGui.QKeySequence.StandardKey.Find), self)
         self.shortcut.activated.connect(self.ui.mainFilter.setFocus)
         self.closeShortcut = QtWidgets.QShortcut(QtGui.QKeySequence(QtGui.QKeySequence.StandardKey.Quit), self)
@@ -42,6 +42,9 @@ class Window(QtWidgets.QMainWindow):
         self.closeShortcut.activated.connect(self.reset_main_filter)
         # self.ui.summaryView.setStyleSheet("alternate-background-color: #fefae0; background-color: white;")
         self.ui.showClosedPositions.stateChanged.connect(self.show_closed_positions_changed)
+
+        self.create_status_bar()
+        self.fill_summary_table()
 
     def show_closed_positions_changed(self):
         if not self.ui.showClosedPositions.isChecked():
@@ -67,7 +70,13 @@ class Window(QtWidgets.QMainWindow):
         # dividend calculations
         d = dividends.Dividends(self.startYear, self.pathPrefix, self.summary, self.totalInvested)
         d.fill_dividends()
-        (self.dividendMap, self.dividendHeader) = d.get_dividend_results()
+        (self.dividendMap, self.dividendHeader, annual_div_a) = d.get_dividend_results()
+        t = 'FwdAnnDivA:{m:0.0f}'.format(m=annual_div_a)
+        annual_div_after_deduction_claim = annual_div_a + 2000
+        t += '┃FwdAnnDivA:{m:0.0f}'.format(m=annual_div_after_deduction_claim)
+        t += '┃YoC_A:{m:0.2f}%'.format(m=annual_div_after_deduction_claim / self.totalInvested * 100)
+        t += '┃FwdAnnDivM:{m:0.0f}'.format(m=(annual_div_after_deduction_claim) / 12)
+        self._sb_annual_div_a.setText(t)
 
         # display transactions
         self.proxyModel = QtCore.QSortFilterProxyModel(self)
@@ -183,6 +192,22 @@ class Window(QtWidgets.QMainWindow):
             print("selected: ", ticker)
             self.display_filtered_transactions(ticker)
             self.display_filtered_dividends(ticker)
+
+    def create_status_bar(self):
+        self.ui.status_bar = self.statusBar()
+
+        self._sb_annual_div_b = QLabel("Left")
+        self._sb_annual_div_b.setFrameStyle(QFrame.Panel | QFrame.Sunken)
+        self._sb_annual_div_b.setAlignment(Qt.AlignBottom | Qt.AlignLeft)
+        self._sb_annual_div_b.setStyleSheet("background-color: bisque")
+
+        self._sb_annual_div_a = QLabel("Right")
+        self._sb_annual_div_a.setFrameStyle(QFrame.Panel | QFrame.Sunken)
+        self._sb_annual_div_a.setAlignment(Qt.AlignBottom | Qt.AlignLeft)
+        self._sb_annual_div_a.setStyleSheet("background-color: lightgreen")
+
+        self.ui.status_bar.addPermanentWidget(self._sb_annual_div_b, 1)
+        self.ui.status_bar.addPermanentWidget(self._sb_annual_div_a, 1)
 
 
 def create_app():

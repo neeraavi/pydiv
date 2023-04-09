@@ -67,6 +67,7 @@ class Dividends:
     def update_summary_table_with_dividend_info(self):
         #    0      1    2    3    4    5        6      7        8
         # [ticker, freq, ym, nos, dps, before, after, where, div_increase]
+        self.total_annual_div_a = 0
         for ticker, t_list in self.dividendsMap.items():
             before_total = sum(row[5] for row in t_list)
             after_total = sum(row[6] for row in t_list)
@@ -89,12 +90,17 @@ class Dividends:
                         if inv != 0:
                             yoc_b = next_before / inv * 100 * self.freq_multiplier(f)
                             next_annual_a = next_after * self.freq_multiplier(f)
+                            self.total_annual_div_a += next_annual_a
+                            print(f'{ticker} ,{next_annual_a}')
                             yoc_a = next_annual_a / inv * 100
                             t_item[5] = "{:.2f} %".format(yoc_a)
                             # t_item[6] = "{:.0f}".format(next_annual_a)
                             t_item[6] = int(next_annual_a)
                             t_item[8] = "{:.2f} %".format(yoc_b)
                         # t_item.insert(6, yoc_a)
+
+        print(
+            f'total_annual_div_a:{self.total_annual_div_a} {self.total_annual_div_a + 2000} {(self.total_annual_div_a + 2000) / 12}')
 
     def update_dividend_table_with_div_increase_marker(self):
         for ticker, t_list in self.dividendsMap.items():
@@ -106,7 +112,7 @@ class Dividends:
                     if prev_div != current_div:
                         if prev_div != 0:
                             div_change = (current_div - prev_div) / prev_div * 100
-                            print(row[0], current_div, prev_div, div_change)
+                            # print(row[0], current_div, prev_div, div_change)
                             sign = '='
                             if prev_div > current_div:
                                 sign = '↓'
@@ -149,4 +155,4 @@ class Dividends:
 
     def get_dividend_results(self):
         dividend_header = ['Ticker', 'F', 'YYYY-MM', '#', 'DPS', 'Before', 'After', 'Where', 'DivInc']
-        return self.dividendsMap, dividend_header
+        return self.dividendsMap, dividend_header, self.total_annual_div_a
