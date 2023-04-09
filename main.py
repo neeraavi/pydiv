@@ -2,7 +2,7 @@ from operator import itemgetter
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QHeaderView
 import sys
 
 import dividends
@@ -40,7 +40,7 @@ class Window(QtWidgets.QMainWindow):
         self.closeShortcut.activated.connect(self.close)
         self.closeShortcut = QtWidgets.QShortcut(QtGui.QKeySequence(QtGui.QKeySequence.StandardKey.Cancel), self)
         self.closeShortcut.activated.connect(self.reset_main_filter)
-        self.ui.summaryView.setStyleSheet("alternate-background-color: #fefae0; background-color: white;")
+        # self.ui.summaryView.setStyleSheet("alternate-background-color: #fefae0; background-color: white;")
         self.ui.showClosedPositions.stateChanged.connect(self.show_closed_positions_changed)
 
     def show_closed_positions_changed(self):
@@ -78,8 +78,18 @@ class Window(QtWidgets.QMainWindow):
         self.ui.mainFilter.textChanged.connect(self.ticker_filter_changed)
         self.ui.summaryView.setModel(self.proxyModel)
         self.ui.summaryView.selectionModel().selectionChanged.connect(self.main_selection_changed)
+        # self.ui.summaryView.setWordWrap(False)
+        self.ui.summaryView.setColumnHidden(1, True)
+        # self.ui.summaryView.horizontalHeader().setMinimumWidth(10)
+        # self.ui.summaryView.horizontalHeader().setMaximumWidth(20)
         self.ui.summaryView.resizeColumnsToContents()
+        # self.ui.summaryView.setColumnWidth(0, 25)
+        # self.ui.summaryView.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        # .verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+        self.ui.summaryView.horizontalHeader().setSectionResizeMode(6, QHeaderView.Stretch)
         self.ui.summaryView.show()
+        # for col in range(10):
+        #    self.ui.summaryView.setColumnWidth(col, 40)
 
     def update_transaction_calendar(self, t):
         (self.investmentCalendar, investment_calendar_header, month_header) = t.get_investment_calendar()
@@ -146,7 +156,8 @@ class Window(QtWidgets.QMainWindow):
         self.dividendSourceModel = DividendModel(filtered, self.dividendHeader)
         self.ui.dividendsView.setModel(self.dividendSourceModel)
         # self.ui.transactionsView.setColumnHidden(6, True)
-        self.ui.dividendsView.resizeColumnsToContents()
+        # self.ui.dividendsView.resizeColumnsToContents()
+        self.ui.dividendsView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.ui.dividendsView.scrollToBottom()
         self.ui.dividendsView.show()
 
@@ -161,7 +172,8 @@ class Window(QtWidgets.QMainWindow):
                                                         ['Ticker', 'B/S', 'Date', '#', 'Cost', 'CPS', 'Sign', 'z'])
         self.ui.transactionsView.setModel(self.transactionsSourceModel)
         self.ui.transactionsView.setColumnHidden(6, True)
-        self.ui.transactionsView.resizeColumnsToContents()
+        # self.ui.transactionsView.resizeColumnsToContents()
+        self.ui.dividendsView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.ui.transactionsView.scrollToBottom()
         self.ui.transactionsView.show()
 

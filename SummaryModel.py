@@ -15,8 +15,16 @@ class SummaryModel(QtCore.QAbstractTableModel):
         d = self._data[index.row()]
         col = index.column()
         if role == Qt.BackgroundRole:
-            if 'Total' in str(d[0]):
-                return QtGui.QColor('#ffe4c4')
+            div_change = d[11]
+            if '↑' == div_change:
+                return QtGui.QColor('#ccd5ae')
+            elif '=' in div_change:
+                return QtGui.QColor('#e9edc9')
+            elif '' == div_change:
+                return QtGui.QColor('#d8f3dc')
+            elif '↓' in div_change:
+                return QtGui.QColor('#fde2e4')
+
         if role == Qt.ForegroundRole:
             if '*' in str(d[1]):
                 return QtGui.QColor('#9c6644')

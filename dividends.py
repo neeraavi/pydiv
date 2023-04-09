@@ -62,6 +62,7 @@ class Dividends:
     def create_dividends_table_from_list(self):
         self.update_summary_table_with_dividend_info()
         self.update_dividend_table_with_div_increase_marker()
+        self.update_summary_table_with_div_increase_marker()
 
     def update_summary_table_with_dividend_info(self):
         #    0      1    2    3    4    5        6      7        8
@@ -76,8 +77,8 @@ class Dividends:
             t_list.append(['Total', '', '', '', '', before_total, after_total, ''])
             last_effective_dps = last_div_before / last_div_nos
             for t_item in self.transactions_list:
-                # ['Ticker', '.', '#', 'Invested', 'Alloc', 'Yoc_A', 'Annual_A', 'Yoc_B', 'Name', 'Sector', 'b1', 'b2']
-                #     0       1    2       3          4        5        6          7
+                # ['Ticker', '.', '#', 'Invested', 'Alloc', 'Yoc_A', 'Annual_A', 'Yoc_B', 'Name', 'Sector', '↕', 'b2']
+                #     0       1    2       3          4        5        6          7         8       9       10
                 if t_item[0] == ticker:
                     nos = t_item[2]
                     next_before = last_effective_dps * nos
@@ -92,14 +93,14 @@ class Dividends:
                             t_item[5] = "{:.2f} %".format(yoc_a)
                             # t_item[6] = "{:.0f}".format(next_annual_a)
                             t_item[6] = int(next_annual_a)
-                            t_item[7] = "{:.2f} %".format(yoc_b)
+                            t_item[8] = "{:.2f} %".format(yoc_b)
                         # t_item.insert(6, yoc_a)
 
     def update_dividend_table_with_div_increase_marker(self):
         for ticker, t_list in self.dividendsMap.items():
             [row.append('') for row in t_list]
             for index, row in enumerate(t_list):
-                if index > 1 and index < len(t_list) - 2:
+                if index > 0 and index < len(t_list) - 2:
                     prev_div = t_list[index - 1][4]
                     current_div = row[4]
                     if prev_div != current_div:
@@ -112,6 +113,31 @@ class Dividends:
                             else:
                                 sign = '↑'
                             row[8] = '{:2.2f}% '.format(div_change) + sign
+
+    def update_summary_table_with_div_increase_marker(self):
+        for ticker, t_list in self.dividendsMap.items():
+            no_of_divs = len(t_list) - 2
+            if no_of_divs < 2:
+                continue
+            freq = t_list[-3][1]
+            cycle_length = self.freq_multiplier(freq)
+            how_many_to_check = cycle_length if no_of_divs >= cycle_length else no_of_divs
+            result = '='
+            for x in range(how_many_to_check):
+                index = -3 - x
+                if '↑' in t_list[index][-1]:
+                    result = '↑'
+                    break
+                if '↓' in t_list[index][-1]:
+                    result = '↓'
+                    break
+            for t_item in self.transactions_list:
+                # ['Ticker', '.', '#', 'Invested', 'Alloc', 'Yoc_A', 'Annual_A', 'Yoc_B', 'Name', 'Sector', '↕', 'b2']
+                #     0       1    2       3          4        5        6          7         8       9       10
+                if t_item[0] == ticker:
+                    t_item[11] = result
+            # print(
+            #    f'{ticker} f={freq} len(divs): {len(t_list)} check last {how_many_to_check}   result:{result}')
 
     def freq_multiplier(self, f):
         if f == 'A': return 1
