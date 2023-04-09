@@ -67,16 +67,16 @@ class Transactions:
             ticker, nos, invested = item
             if nos == 0:
                 status = '*'
-                alloc = '0.00 %'
+                alloc = '0.00%'
             else:
                 status = ' '
-                alloc = "{:.2f} %".format(invested / self.totalInvested * 100)
+                alloc = "{:.2f}%".format(invested / self.totalInvested * 100)
             # item.append(alloc)
             # item.insert(7, '0.00%')  # yoc_a
             # item.insert(6, '0.00%')  # yoc_b
             # item.insert(5, 0)  # ann_a
-            item[5:5] = (alloc, '0.00%', 0, '0.00%', '0.00%')
-            #                    yoc_a  ann_a ann_a%   yoc_b
+            item[5:5] = (alloc, '0.00%', 0, '0.00%', '0.00%', 0)
+            #                    yoc_a  ann_a ann_a% yoc_b, ann_b
             item.insert(1, status)
         print(self.totalInvested, '##')
         self.cleanup_transaction_calendar()
@@ -121,7 +121,8 @@ class Transactions:
         return fileprocessor.process_file(f, self.transactions_processor, self.create_transactions_table_from_list)
 
     def get_transaction_results(self):
-        summary_header = ['Ticker', '.', '#', 'Inv', 'Alloc', 'Yoc_A', 'Ann_A', 'Ann_A%', 'Yoc_B', 'Name', 'Sector',
+        summary_header = ['Ticker', '.', '#', 'Inv', 'Alloc', 'Yoc_A', 'Ann_A', 'Ann_A%', 'Yoc_B', 'Ann_B', 'Name',
+                          'Sector',
                           '↕',
                           'b1', 'b2']
         return self.transactions, self.transactionMap, self.totalInvested, summary_header

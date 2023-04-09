@@ -63,11 +63,13 @@ class Dividends:
         self.update_summary_table_with_dividend_info()
         self.update_dividend_table_with_div_increase_marker()
         self.update_summary_table_with_div_increase_marker()
+        self.update_summary_table_with_div_contrib_from_each_ticker()
 
     def update_summary_table_with_dividend_info(self):
         #    0      1    2    3    4    5        6      7        8
         # [ticker, freq, ym, nos, dps, before, after, where, div_increase]
         self.total_annual_div_a = 0
+        self.total_annual_div_b = 0
         for ticker, t_list in self.dividendsMap.items():
             before_total = sum(row[5] for row in t_list)
             after_total = sum(row[6] for row in t_list)
@@ -84,19 +86,26 @@ class Dividends:
                     nos = t_item[2]
                     next_before = last_effective_dps * nos
                     next_after = next_before * self.tax_factor
-                    t_list.append(['Next', '~1', '~2', nos, dps, next_before, next_after, '~7'])
+                    t_list.insert(-1, ['Next', '~1', '~2', nos, dps, next_before, next_after, '~7'])
                     if nos > 0:
                         inv = t_item[3]
                         if inv != 0:
-                            yoc_b = next_before / inv * 100 * self.freq_multiplier(f)
-                            next_annual_a = next_after * self.freq_multiplier(f)
-                            self.total_annual_div_a += next_annual_a
-                            print(f'{ticker} ,{next_annual_a}')
+                            mult = self.freq_multiplier(f)
+
+                            next_annual_a = next_after * mult
                             yoc_a = next_annual_a / inv * 100
-                            t_item[5] = "{:.2f} %".format(yoc_a)
-                            # t_item[6] = "{:.0f}".format(next_annual_a)
+                            self.total_annual_div_a += next_annual_a
+                            t_item[5] = "{:.2f}%".format(yoc_a)
                             t_item[6] = int(next_annual_a)
-                            t_item[8] = "{:.2f} %".format(yoc_b)
+
+                            next_annual_b = next_before * mult
+                            yoc_b = next_annual_b / inv * 100
+                            self.total_annual_div_b += next_annual_b
+                            t_item[8] = "{:.2f}%".format(yoc_b)
+                            t_item[9] = int(next_annual_b)
+
+                            # print(f'{ticker} ,{next_annual_a}')
+                            # t_item[6] = "{:.0f}".format(next_annual_a)
                         # t_item.insert(6, yoc_a)
 
         print(
@@ -138,12 +147,16 @@ class Dividends:
                     result = '↓'
                     break
             for t_item in self.transactions_list:
-                # ['Ticker', '.', '#', 'Invested', 'Alloc', 'Yoc_A', 'Annual_A', 'Yoc_B', 'Name', 'Sector', '↕', 'b2']
-                #     0       1    2       3          4        5        6          7         8       9       10
+                # ['Ticker', '.', '#', 'Invested', 'Alloc', 'Yoc_A', 'Annual_A', 'Ann_A%' Yoc_B', 'Name', 'Sector', '↕', 'b2']
+                #     0       1    2       3          4        5        6          7         8       9       10      11
                 if t_item[0] == ticker:
-                    t_item[11] = result
+                    t_item[12] = result
             # print(
             #    f'{ticker} f={freq} len(divs): {len(t_list)} check last {how_many_to_check}   result:{result}')
+
+    def update_summary_table_with_div_contrib_from_each_ticker(self):
+        for t_item in self.transactions_list:
+            t_item[7] = '{:2.2f}% '.format(t_item[6] / self.total_annual_div_a * 100)
 
     def freq_multiplier(self, f):
         if f == 'A': return 1
@@ -155,4 +168,4 @@ class Dividends:
 
     def get_dividend_results(self):
         dividend_header = ['Ticker', 'F', 'YYYY-MM', '#', 'DPS', 'Before', 'After', 'Where', 'DivInc']
-        return self.dividendsMap, dividend_header, self.total_annual_div_a
+        return self.dividendsMap, dividend_header, self.total_annual_div_a, self.total_annual_div_b
