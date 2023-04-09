@@ -11,14 +11,19 @@ class DividendModel(TransactionModel):
         if not index.isValid():
             return None
         d = self._data[index.row()]
+        col = index.column()
         if role == Qt.BackgroundRole:
             # if index.row() == 12:
             #    return QtGui.QColor('#ffe4c4')
             if 'Total' in str(d[0]):
-                return QtGui.QColor('#ffe4c4')
+                return QtGui.QColor('bisque')
             if 'Next' in str(d[0]):
-                return QtGui.QColor('#faedcd')
+                return QtGui.QColor('tan')
             # if index.row() % 2 == 0:
+            if col == 5 or col == 6:
+                return QtGui.QColor('seashell')
+            if col == 7 or col == 8:
+                return QtGui.QColor('wheat')
             return QtGui.QColor('#ffffff')
             # else:
             #    return QtGui.QColor('#f0ead2')
@@ -40,6 +45,7 @@ class DividendModel(TransactionModel):
             if isinstance(d, float):
                 return "{:.3f}".format(d)
             return d
-        if col == 5 or col == 6:
+        if col == 5 or col == 7:
+            # print(self._data[index.row()][index.column()])
             return "{:.2f}".format(self._data[index.row()][index.column()])
         return self._data[index.row()][index.column()]

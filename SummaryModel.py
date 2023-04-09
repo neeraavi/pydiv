@@ -15,22 +15,32 @@ class SummaryModel(QtCore.QAbstractTableModel):
         d = self._data[index.row()]
         col = index.column()
         if role == Qt.BackgroundRole:
-            div_change = d[11]
-            if '↑' == div_change:
-                return QtGui.QColor('#ccd5ae')
-            elif '=' in div_change:
-                return QtGui.QColor('#e9edc9')
-            elif '' == div_change:
-                return QtGui.QColor('#d8f3dc')
-            elif '↓' in div_change:
-                return QtGui.QColor('#fde2e4')
+            if col == 4:
+                return QtGui.QColor('tan')
+            if col == 5 or col == 6:
+                return QtGui.QColor('wheat')
+            if col == 7:
+                return QtGui.QColor('papayawhip')
+            if col == 8 or col == 9:
+                return QtGui.QColor('seashell')
+        if role == Qt.BackgroundRole:
+            if col == 12:
+                div_change = d[12]
+                if '↑' == div_change:
+                    return QtGui.QColor('#d8f3dc')
+                elif '=' in div_change:
+                    return QtGui.QColor('honeydew')
+                elif '' == div_change:
+                    return QtGui.QColor('#edf2fb')
+                elif '↓' in div_change:
+                    return QtGui.QColor('mistyrose')
 
         if role == Qt.ForegroundRole:
             if '*' in str(d[1]):
                 return QtGui.QColor('#9c6644')
         if role == Qt.TextAlignmentRole:
             colNum = index.column()
-            return Qt.AlignLeft if (colNum < 2 or colNum > 7) else Qt.AlignRight
+            return Qt.AlignLeft if (colNum < 2 or colNum > 9) else Qt.AlignRight
         if role != Qt.ItemDataRole.DisplayRole:
             # for all roles you're not interested in return python's None
             # which is interpreted as an invalid QVariant value

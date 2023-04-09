@@ -1,5 +1,6 @@
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QTableView
 
 
 class TransactionModel(QtCore.QAbstractTableModel):
@@ -12,7 +13,9 @@ class TransactionModel(QtCore.QAbstractTableModel):
     def data(self, index, role):
         if not index.isValid():
             return None
-        d = self._data[index.row()]
+        row = index.row()
+        col = index.column()
+        d = self._data[row]
         if role == Qt.BackgroundRole:
             if 'Total' in str(d[0]):
                 return QtGui.QColor('#ffe4c4')
@@ -26,7 +29,6 @@ class TransactionModel(QtCore.QAbstractTableModel):
             # for all roles you're not interested in return python's None
             # which is interpreted as an invalid QVariant value
             return None
-        col = index.column()
         if col == 4:
             return "{:.2f}".format(self._data[index.row()][col])
         return self._data[index.row()][index.column()]

@@ -202,10 +202,14 @@ class Window(QtWidgets.QMainWindow):
         # self.ui.dividendsView.resizeColumnsToContents()
         # self.ui.transactionsView.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         # self.ui.dividendsView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.ui.dividendsView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        for col in range(5):
-            self.ui.dividendsView.horizontalHeader().setSectionResizeMode(col,
-                                                                          QtWidgets.QHeaderView.ResizeToContents)
+        self.ui.dividendsView.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        # for col in range(9):
+        #    self.ui.dividendsView.horizontalHeader().setSectionResizeMode(col,
+        #                                                                 QtWidgets.QHeaderView.ResizeToContents)
+        self.ui.dividendsView.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
+        self.ui.dividendsView.horizontalHeader().setSectionResizeMode(5, QHeaderView.Stretch)
+        self.ui.dividendsView.horizontalHeader().setSectionResizeMode(7, QHeaderView.Stretch)
+        self.ui.dividendsView.horizontalHeader().setSectionResizeMode(9, QHeaderView.Stretch)
         self.ui.dividendsView.scrollToBottom()
         self.ui.dividendsView.show()
 
