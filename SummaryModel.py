@@ -16,16 +16,16 @@ class SummaryModel(QtCore.QAbstractTableModel):
         col = index.column()
         if role == Qt.BackgroundRole:
             if col == 4:
-                return QtGui.QColor('tan')
-            if col == 5 or col == 6:
                 return QtGui.QColor('wheat')
-            if col == 7:
+            if col == 5 or col == 6:
                 return QtGui.QColor('papayawhip')
+            # if col == 7:
+            #    return QtGui.QColor('papayawhip')
             if col == 8 or col == 9:
                 return QtGui.QColor('seashell')
         if role == Qt.BackgroundRole:
-            if col == 12:
-                div_change = d[12]
+            if col == 1:
+                div_change = d[1]
                 if '↑' == div_change:
                     return QtGui.QColor('#d8f3dc')
                 elif '=' in div_change:

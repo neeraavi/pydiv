@@ -19,6 +19,7 @@ from DividendModel import DividendModel
 class Window(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         super(Window, self).__init__(parent)
+        self.investmentCalendarModel = None
         self._label_ = []
         self.dividendSourceModel = None
         self.calendarDetailsModel = None
@@ -103,8 +104,8 @@ class Window(QtWidgets.QMainWindow):
         # .verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
         ##self.ui.summaryView.horizontalHeader().setSectionResizeMode(6, QHeaderView.Stretch)
         self.ui.summaryView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.ui.summaryView.horizontalHeader().setSectionResizeMode(12,
-                                                                    QtWidgets.QHeaderView.ResizeToContents)
+        # self.ui.summaryView.horizontalHeader().setSectionResizeMode(12,
+        #                                                            QtWidgets.QHeaderView.ResizeToContents)
         for col in range(10):
             self.ui.summaryView.horizontalHeader().setSectionResizeMode(col,
                                                                         QtWidgets.QHeaderView.ResizeToContents)

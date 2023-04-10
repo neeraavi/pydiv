@@ -5,6 +5,7 @@ import fileprocessor
 
 class Transactions:
     def __init__(self, start_year, prefix):
+        self.numOfYears = None
         self.prefix = prefix
         self.totalInvested = 0
         self.transactions = []
@@ -26,9 +27,6 @@ class Transactions:
 
         self.numOfYears = (self.now.year - self.startYear + 1)
         self.investmentCalendar = [[0] * self.numOfYears for i in range(12)]
-        # for s in self.investmentCalendar:
-        #    print(*s)
-        # print(json.dumps(self.transactionsCalendarMap, indent=4))
 
     def transactions_processor(self, line):
         if line.startswith('#'):
@@ -45,7 +43,7 @@ class Transactions:
                 self.transactionMap[name] = []
             self.transactionMap[name].append(item)
 
-    def create_transactions_table_from_list(self):
+    def create_summary_table_from_list(self):
         # [name, operation, ym + ' - ' + dd, nos, cost, cps, op_sign]'
         #  0      1          2              3      4    5    6
         for ticker, t_list in self.transactionMap.items():
@@ -71,14 +69,9 @@ class Transactions:
             else:
                 status = ' '
                 alloc = "{:.2f}%".format(invested / self.totalInvested * 100)
-            # item.append(alloc)
-            # item.insert(7, '0.00%')  # yoc_a
-            # item.insert(6, '0.00%')  # yoc_b
-            # item.insert(5, 0)  # ann_a
             item[5:5] = (alloc, '0.00%', 0, '0.00%', '0.00%', 0)
             #                    yoc_a  ann_a ann_a%  yoc_b,  ann_b
             item.insert(1, status)
-        # print(self.totalInvested, '##')
         self.cleanup_transaction_calendar()
         self.process_names()
 
@@ -95,11 +88,10 @@ class Transactions:
                 inner_list[self.startYear - y - 1] = self.investmentCalendarMap[ym]
         total_row = [sum(i) for i in zip(*self.investmentCalendar)]
         self.investmentCalendar.append(total_row)
-        sigma_row = [0 for x in total_row]
+        sigma_row = [0] * len(total_row)
         sigma_row[0] = sum(total_row)
         sigma_row[2] = 'ϕ'
         sigma_row[3] = round(sigma_row[0] / self.numOfYears)
-        # print(sum(total_row))
         self.investmentCalendar.append(sigma_row)
         print(total_row)
 
@@ -114,30 +106,21 @@ class Transactions:
                 sector = sector.strip()
                 for t in self.transactions:
                     if ticker == t[0]:
-                        t.extend([name, sector, ''])
+                        t.extend([name, sector])
 
     def fill_transactions(self):
         f = self.prefix + '/akt.txt'
-        return fileprocessor.process_file(f, self.transactions_processor, self.create_transactions_table_from_list)
+        return fileprocessor.process_file(f, self.transactions_processor, self.create_summary_table_from_list)
 
     def get_transaction_results(self):
-        summary_header = ['Ticker', '.', '#', 'Inv', 'Alloc', 'Yoc_A', 'Ann_A', 'Ann_A%', 'Yoc_B', 'Ann_B',
-                          'Name',
-                          'Sector',
-                          '↕',
-                          'b1', 'b2']
+        summary_header = ['Ticker', '.', '#', 'Inv', 'Alloc', 'Yoc_A', 'Ann_A', 'Contrib%', 'Yoc_B', 'Ann_B', 'Name',
+                          'Sector']
         return self.transactions, self.transactionMap, self.totalInvested, summary_header
 
     def get_investment_calendar(self):
         investment_calendar_header = [x for x in range(self.now.year, self.startYear - 1, -1)]
-        # investment_calendar_header.insert(0, 'Month')
         month_names = list(calendar.month_name)[1:13]
         month_names.append('Total')
-        # month_names.append('')
         month_names.append('Σ')
-        # m = 0
-        # for row in self.investmentCalendar:
-        #    row.insert(0, month_names[m])
-        #    m = m + 1
         self.investmentCalendar = [[' ' if x == 0 else x for x in l] for l in self.investmentCalendar]
         return self.investmentCalendar, investment_calendar_header, month_names
