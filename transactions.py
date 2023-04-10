@@ -113,7 +113,7 @@ class Transactions:
         return fileprocessor.process_file(f, self.transactions_processor, self.create_summary_table_from_list)
 
     def get_transaction_results(self):
-        summary_header = ['Ticker', '.', '#', 'Inv', 'Alloc', 'Yoc_A', 'Ann_A', 'Contrib%', 'Yoc_B', 'Ann_B', 'Name',
+        summary_header = ['Ticker', '.', '#', 'Inv', 'Alloc', 'Yoc_B', 'Ann_B', 'Contrib%', 'Yoc_A', 'Ann_A', 'Name',
                           'Sector']
         return self.transactions, self.transactionMap, self.totalInvested, summary_header
 

@@ -1,5 +1,6 @@
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import Qt
+import columnNames as consts
 
 
 class SummaryModel(QtCore.QAbstractTableModel):
@@ -15,29 +16,26 @@ class SummaryModel(QtCore.QAbstractTableModel):
         d = self._data[index.row()]
         col = index.column()
         if role == Qt.BackgroundRole:
-            if col == 4:
-                return QtGui.QColor('wheat')
-            if col == 5 or col == 6:
-                return QtGui.QColor('papayawhip')
-            # if col == 7:
-            #    return QtGui.QColor('papayawhip')
-            if col == 8 or col == 9:
-                return QtGui.QColor('seashell')
-        if role == Qt.BackgroundRole:
+            if col == consts.SMRY_ALLOC:
+                return QtGui.QColor(consts.ALLOC_COLOR)
+            if col == consts.SMRY_ANN_DIV_A or col == consts.SMRY_YOC_A:
+                return QtGui.QColor(consts.AFTER_TAX_COLOR)
+            if col == consts.SMRY_ANN_DIV_B or col == consts.SMRY_YOC_B:
+                return QtGui.QColor(consts.BEFORE_TAX_COLOR)
             if col == 1:
                 div_change = d[1]
-                if '↑' == div_change:
-                    return QtGui.QColor('#d8f3dc')
-                elif '=' in div_change:
-                    return QtGui.QColor('honeydew')
+                if consts.SIGN_INCR == div_change:
+                    return QtGui.QColor(consts.INCR_COLOR)
+                elif consts.SIGN_SAME in div_change:
+                    return QtGui.QColor(consts.SAME_COLOR)
                 elif '' == div_change:
-                    return QtGui.QColor('#edf2fb')
-                elif '↓' in div_change:
-                    return QtGui.QColor('mistyrose')
+                    return QtGui.QColor(consts.UNKNOWN_COLOR)
+                elif consts.SIGN_DECR in div_change:
+                    return QtGui.QColor(consts.DECR_COLOR)
 
         if role == Qt.ForegroundRole:
             if '*' in str(d[1]):
-                return QtGui.QColor('#9c6644')
+                return QtGui.QColor(consts.CLOSED_POS_COLOR)
         if role == Qt.TextAlignmentRole:
             colNum = index.column()
             return Qt.AlignLeft if (colNum < 2 or colNum > 9) else Qt.AlignRight

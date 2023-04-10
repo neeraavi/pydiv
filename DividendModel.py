@@ -1,6 +1,7 @@
 from TransactionModel import TransactionModel
 from PyQt5 import QtGui
 from PyQt5.QtCore import Qt
+import columnNames as consts
 
 
 class DividendModel(TransactionModel):
@@ -13,22 +14,16 @@ class DividendModel(TransactionModel):
         d = self._data[index.row()]
         col = index.column()
         if role == Qt.BackgroundRole:
-            # if index.row() == 12:
-            #    return QtGui.QColor('#ffe4c4')
             if 'Total' in str(d[0]):
-                return QtGui.QColor('bisque')
+                return QtGui.QColor(consts.TOTAL_COLOR)
             if 'Next' in str(d[0]):
-                return QtGui.QColor('tan')
-            # if index.row() % 2 == 0:
-            if col == 5 or col == 6:
-                return QtGui.QColor('seashell')
-            if col == 7 or col == 8:
-                return QtGui.QColor('wheat')
+                return QtGui.QColor(consts.NEXT_COLOR)
+            if col == consts.DIV_AFTER or col == consts.DIV_YOC_A:
+                return QtGui.QColor(consts.AFTER_TAX_COLOR)
+            if col == consts.DIV_BEFORE or col == consts.DIV_YOC_B:
+                return QtGui.QColor(consts.BEFORE_TAX_COLOR)
             return QtGui.QColor('#ffffff')
-            # else:
-            #    return QtGui.QColor('#f0ead2')
-            # if index.row() == 13:
-            #    return QtGui.QColor('#e9edc9')
+
         if role == Qt.ForegroundRole:
             if '*' in str(d[1]):
                 return QtGui.QColor('#ff0000')

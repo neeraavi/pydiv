@@ -1,6 +1,6 @@
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QTableView
+import columnNames as consts
 
 
 class TransactionModel(QtCore.QAbstractTableModel):
@@ -18,10 +18,10 @@ class TransactionModel(QtCore.QAbstractTableModel):
         d = self._data[row]
         if role == Qt.BackgroundRole:
             if 'Total' in str(d[0]):
-                return QtGui.QColor('#ffe4c4')
+                return QtGui.QColor(consts.TOTAL_COLOR)
         if role == Qt.ForegroundRole:
             if '*' in str(d[1]):
-                return QtGui.QColor('#9c6644')
+                return QtGui.QColor(consts.CLOSED_POS_COLOR)
         if role == Qt.TextAlignmentRole:
             colNum = index.column()
             return Qt.AlignLeft if (colNum < 2) else Qt.AlignRight

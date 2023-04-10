@@ -14,6 +14,7 @@ from TransactionModel import TransactionModel
 from CalendarModel import CalendarModel
 from CalendarDetailsModel import CalendarDetailsModel
 from DividendModel import DividendModel
+import columnNames as consts
 
 
 class Window(QtWidgets.QMainWindow):
@@ -40,32 +41,40 @@ class Window(QtWidgets.QMainWindow):
         self.proxyModel = None
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self.ui.btn_1.setText("ff")
-        self.ui.btn_1.clicked.connect(self.close)
 
+        self.setup_shortcuts_and_connections()
+        self.create_status_bar()
+        self.fill_summary_table()
+
+    def setup_shortcuts_and_connections(self):
         self.shortcut = QtWidgets.QShortcut(QtGui.QKeySequence(QtGui.QKeySequence.StandardKey.Find), self)
         self.shortcut.activated.connect(self.ui.mainFilter.setFocus)
         self.closeShortcut = QtWidgets.QShortcut(QtGui.QKeySequence(QtGui.QKeySequence.StandardKey.Quit), self)
         self.closeShortcut.activated.connect(self.close)
         self.closeShortcut = QtWidgets.QShortcut(QtGui.QKeySequence(QtGui.QKeySequence.StandardKey.Cancel), self)
         self.closeShortcut.activated.connect(self.reset_main_filter)
+
         # self.ui.summaryView.setStyleSheet("alternate-background-color: #fefae0; background-color: white;")
         # self.ui.summaryView.setStyleSheet("""QTableView {  gridline-color: #F2D2BD;}""")
         self.ui.showClosedPositions.stateChanged.connect(self.show_closed_positions_changed)
-
-        self.create_status_bar()
-        self.fill_summary_table()
+        self.ui.searchAllColumns.stateChanged.connect(self.search_all_columns_changed)
 
     def show_closed_positions_changed(self):
-        if not self.ui.showClosedPositions.isChecked():
-            self.selected_summary = self.summary_active_positions_only
-            self.visible_tickers = self._visible_tickers_active_only
-        else:
+        if self.ui.showClosedPositions.isChecked():
             self.selected_summary = self.summary
             self.visible_tickers = self._visible_tickers_all
+        else:
+            self.selected_summary = self.summary_active_positions_only
+            self.visible_tickers = self._visible_tickers_active_only
 
         self.sourceModel = SummaryModel(self.selected_summary, self.summaryHeader)
         self.proxyModel.setSourceModel(self.sourceModel)
+
+    def search_all_columns_changed(self):
+        if self.ui.showClosedPositions.isChecked():
+            self.proxyModel.setFilterKeyColumn(-1)  # Search all columns.
+        else:
+            self.proxyModel.setFilterKeyColumn(consts.SMRY_TICKER)  # only ticker
 
     def fill_summary_table(self):
         # transaction calculations
@@ -85,36 +94,30 @@ class Window(QtWidgets.QMainWindow):
         (self.dividendMap, self.dividendHeader, annual_div_a, annual_div_b) = d.get_dividend_results()
         self.update_status_bar(annual_div_a, annual_div_b)
 
-        # display transactions
+        # display summary table
         self.proxyModel = QtCore.QSortFilterProxyModel(self)
         self.show_closed_positions_changed()
-        self.proxyModel.setFilterKeyColumn(-1)  # Search all columns.
+        self.proxyModel.setFilterKeyColumn(consts.SMRY_TICKER)
         self.proxyModel.sort(0, Qt.AscendingOrder)
         self.proxyModel.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.ui.mainFilter.textChanged.connect(self.ticker_filter_changed)
         self.ui.summaryView.setModel(self.proxyModel)
         self.ui.summaryView.selectionModel().selectionChanged.connect(self.main_selection_changed)
-        # self.ui.summaryView.setWordWrap(False)
-        ##self.ui.summaryView.setColumnHidden(1, True)
-        # self.ui.summaryView.horizontalHeader().setMinimumWidth(10)
-        # self.ui.summaryView.horizontalHeader().setMaximumWidth(20)
-        ##self.ui.summaryView.resizeColumnsToContents()
-        # self.ui.summaryView.setColumnWidth(0, 25)
-        # self.ui.summaryView.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-        # .verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-        ##self.ui.summaryView.horizontalHeader().setSectionResizeMode(6, QHeaderView.Stretch)
+
         self.ui.summaryView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        # self.ui.summaryView.horizontalHeader().setSectionResizeMode(12,
-        #                                                            QtWidgets.QHeaderView.ResizeToContents)
         for col in range(10):
-            self.ui.summaryView.horizontalHeader().setSectionResizeMode(col,
-                                                                        QtWidgets.QHeaderView.ResizeToContents)
+            self.ui.summaryView.horizontalHeader().setSectionResizeMode(col, QtWidgets.QHeaderView.ResizeToContents)
 
         self.ui.summaryView.show()
         index = self.ui.summaryView.model().index(0, 0)
         self.ui.summaryView.setCurrentIndex(index)
-        # for col in range(10):
-        #    self.ui.summaryView.setColumnWidth(col, 40)
+
+    def main_selection_changed(self, selected):
+        if len(selected.indexes()) > 0:
+            ticker = selected.indexes()[0].data()
+            print("selected: ", ticker)
+            self.display_filtered_transactions(ticker)
+            self.display_filtered_dividends(ticker)
 
     def update_status_bar(self, annual_div_a, annual_div_b):
         t = 'FwdAnnDivA:  {m:0.0f}'.format(m=annual_div_a)
@@ -138,13 +141,9 @@ class Window(QtWidgets.QMainWindow):
     def update_transaction_calendar(self, t):
         (self.investmentCalendar, investment_calendar_header, month_header) = t.get_investment_calendar()
         self.investmentCalendarModel = CalendarModel(self.investmentCalendar, investment_calendar_header, month_header)
-        ##self.ui.investmentCalendarView.setModel(self.investmentCalendarModel)
-        # self.ui.investmentCalendarView.setColumnWidth(1, 100)
-        # self.ui.investmentCalendarView.horizontalHeader().setMaximumWidth(40)
-        # self.ui.investmentCalendarView.horizontalHeader().setMinimumWidth(30)
 
         proxy_model = QtCore.QSortFilterProxyModel(self)
-        proxy_model.setFilterKeyColumn(-1)  # Search all columns.
+        # proxy_model.setFilterKeyColumn(-1)  # Search all columns.
         proxy_model.setSourceModel(self.investmentCalendarModel)
         self.ui.investmentCalendarView.setModel(proxy_model)
         self.ui.investmentCalendarView.selectionModel().selectionChanged.connect(self.inv_cal_selection_changed)
@@ -196,53 +195,31 @@ class Window(QtWidgets.QMainWindow):
             return
 
         filtered = self.dividendMap[ticker]
-        # print(ticker, filtered)
         self.dividendSourceModel = DividendModel(filtered, self.dividendHeader)
         self.ui.dividendsView.setModel(self.dividendSourceModel)
-        # self.ui.transactionsView.setColumnHidden(6, True)
-        # self.ui.dividendsView.resizeColumnsToContents()
-        # self.ui.transactionsView.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-        # self.ui.dividendsView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.ui.dividendsView.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-        # for col in range(9):
-        #    self.ui.dividendsView.horizontalHeader().setSectionResizeMode(col,
-        #                                                                 QtWidgets.QHeaderView.ResizeToContents)
-        self.ui.dividendsView.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
-        self.ui.dividendsView.horizontalHeader().setSectionResizeMode(5, QHeaderView.Stretch)
-        self.ui.dividendsView.horizontalHeader().setSectionResizeMode(7, QHeaderView.Stretch)
-        self.ui.dividendsView.horizontalHeader().setSectionResizeMode(9, QHeaderView.Stretch)
+        for col in [4, 5, 7, 9]:
+            self.ui.dividendsView.horizontalHeader().setSectionResizeMode(col, QHeaderView.Stretch)
         self.ui.dividendsView.scrollToBottom()
         self.ui.dividendsView.show()
 
     def display_filtered_transactions(self, ticker):
         if ticker not in self.transactionMap or ticker not in self.visible_tickers:
+            # if ticker not in self.visible_tickers:
             self.ui.transactionsView.setVisible(False)
             return
 
         filtered = self.transactionMap[ticker]
-        # print(ticker, filtered)
-        self.transactionsSourceModel = TransactionModel(filtered,
-                                                        ['Ticker', 'B/S', 'Date', '#', 'Cost', 'CPS', 'Sign', 'z'])
+        self.transactionsSourceModel = TransactionModel(filtered, ['Ticker', 'B/S', 'Date', '#', 'Cost', 'CPS', 'Sign'])
         self.ui.transactionsView.setModel(self.transactionsSourceModel)
         self.ui.transactionsView.setColumnHidden(6, True)
-        # self.ui.transactionsView.resizeColumnsToContents()
-
-        # self.ui.transactionsView.setSizeAdjustPolicy(self.ui.transactionsView.AdjustToContents)
-        # self.ui.transactionsView.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         self.ui.transactionsView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
         for col in range(4):
             self.ui.transactionsView.horizontalHeader().setSectionResizeMode(col,
                                                                              QtWidgets.QHeaderView.ResizeToContents)
-        # self.ui.transactionsView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.ui.transactionsView.scrollToBottom()
         self.ui.transactionsView.show()
-
-    def main_selection_changed(self, selected):
-        if len(selected.indexes()) > 0:
-            ticker = selected.indexes()[0].data()
-            print("selected: ", ticker)
-            self.display_filtered_transactions(ticker)
-            self.display_filtered_dividends(ticker)
 
     def create_status_bar(self):
         self.ui.status_bar = self.statusBar()
@@ -263,29 +240,17 @@ class Window(QtWidgets.QMainWindow):
             else:
                 self._label_[i].setStyleSheet("background-color: lightskyblue")
             self.ui.status_bar.addPermanentWidget(self._label_[i], 1)
-        # font = QtGui.QFont()
-        # font.setFamily("Arial Black")
-        # font.setPointSize(9)
 
         f = self._label_[8].font()
         f.setBold(True)
         # f.setPointSize(9)
         self._label_[8].setFont(f)
 
-        # self._sb_annual_div_a = QLabel("Right")
-        # self._sb_annual_div_a.setFrameStyle(QFrame.Panel | QFrame.Sunken)
-        # self._sb_annual_div_a.setAlignment(Qt.AlignBottom | Qt.AlignLeft)
-        # self._sb_annual_div_a.setStyleSheet("background-color: lightgreen")
-
-        # self.ui.status_bar.addPermanentWidget(self._sb_annual_div_b, 1)
-        # self.ui.status_bar.addPermanentWidget(self._sb_annual_div_a, 1)
-
 
 def create_app():
     app = QApplication(sys.argv)
     win = Window()
     win.show()
-    # win.ui.mainFilter.setFocus()
     win.ui.summaryView.setFocus()
     sys.exit(app.exec_())
 

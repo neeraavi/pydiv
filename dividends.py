@@ -1,5 +1,5 @@
 import fileprocessor
-import columnNames as idx
+import columnNames as consts
 
 
 def freq_multiplier(f):
@@ -54,15 +54,13 @@ class Dividends:
         self.combine_with_same_ym_or_append(item)
 
     def combine_with_same_ym_or_append(self, new_entry):
-        # 0        1     2    3     4   5        6      7      8       9      10
-        # [ticker, freq, ym, nos, dps, before, yoc_b, after, yoc_a, where,  div_increase]
-        ticker = new_entry[idx.DIV_TICKER]
+        ticker = new_entry[consts.DIV_TICKER]
         for existing_row in self.dividendsMap[ticker]:
-            if existing_row[idx.DIV_YM] == new_entry[idx.DIV_YM]:
-                existing_row[idx.DIV_NOS] += new_entry[idx.DIV_NOS]
-                existing_row[idx.DIV_BEFORE] += new_entry[idx.DIV_BEFORE]
-                existing_row[idx.DIV_AFTER] += new_entry[idx.DIV_AFTER]
-                existing_row[idx.DIV_WHERE] = '~c~'
+            if existing_row[consts.DIV_YM] == new_entry[consts.DIV_YM]:
+                existing_row[consts.DIV_NOS] += new_entry[consts.DIV_NOS]
+                existing_row[consts.DIV_BEFORE] += new_entry[consts.DIV_BEFORE]
+                existing_row[consts.DIV_AFTER] += new_entry[consts.DIV_AFTER]
+                existing_row[consts.DIV_WHERE] = '~c~'
                 return
         self.dividendsMap[ticker].append(new_entry)
 
@@ -76,109 +74,99 @@ class Dividends:
         # 0        1    2    3     4   5        6      7      8       9      10
         # [ticker, freq, ym, nos, dps, before, yoc_b, after, yoc_a, where,  div_increase]
         for ticker, d_rows in self.dividendsMap.items():
-            before_total = sum(row[idx.DIV_BEFORE] for row in d_rows)
-            after_total = sum(row[idx.DIV_AFTER] for row in d_rows)
+            before_total = sum(row[consts.DIV_BEFORE] for row in d_rows)
+            after_total = sum(row[consts.DIV_AFTER] for row in d_rows)
             last_row = d_rows[-1]  # use last item to get div freq
             f = last_row[1]
-            (last_div_nos, dps, last_div_before) = last_row[idx.DIV_NOS:idx.DIV_BEFORE + 1]
+            (last_div_nos, dps, last_div_before) = last_row[consts.DIV_NOS:consts.DIV_BEFORE + 1]
             d_rows.append(['Total', '', '', '', '', before_total, '', after_total, '', ''])
 
-            mult = freq_multiplier(f)
+            num_of_div_payments_per_year = freq_multiplier(f)
             last_effective_dps = last_div_before / last_div_nos
             for t_item in self.transactions_list:
-                # ['Ticker', '.', '#', 'Invested', 'Alloc', 'Yoc_A', 'Annual_A', 'Ann_A%' Yoc_B', 'Ann_B%', 'Name', 'Sector']
-                #     0       1    2       3          4        5        6          7         8       9       10      11
-                if t_item[idx.SMRY_TICKER] == ticker:
-                    nos = t_item[idx.SMRY_NOS]
-                    invested = t_item[idx.SMRY_INVESTED]
-
-                    if nos > 0:
-                        factor = mult * 100 / (invested / nos)
-                        for d in d_rows[:-1]:
-                            cps = factor / d[idx.DIV_NOS]
-                            d[idx.DIV_YOC_B] = "{:.2f}%".format(d[idx.DIV_BEFORE] * cps)
-                            d[idx.DIV_YOC_A] = "{:.2f}%".format(d[idx.DIV_AFTER] * cps)
+                if t_item[consts.SMRY_TICKER] == ticker:
+                    nos = t_item[consts.SMRY_NOS]
+                    invested = t_item[consts.SMRY_INVESTED]
 
                     next_before = last_effective_dps * nos
                     next_after = next_before * self.tax_factor
                     yoc_a = yoc_b = '0.00%'
+
                     if nos > 0:
-                        factor = 100 * mult / invested
+                        factor = 100 * num_of_div_payments_per_year / invested
                         yoc_b = "{:.2f}%".format(next_before * factor)
                         yoc_a = "{:.2f}%".format(next_after * factor)
+                        factor = nos * factor
+                        for d in d_rows[:-1]:
+                            cps = factor / d[consts.DIV_NOS]
+                            d[consts.DIV_YOC_B] = "{:.2f}%".format(d[consts.DIV_BEFORE] * cps)
+                            d[consts.DIV_YOC_A] = "{:.2f}%".format(d[consts.DIV_AFTER] * cps)
 
                     d_rows.insert(-1, ['Next', '', '', nos, dps, next_before, yoc_b, next_after, yoc_a, ''])
                     if nos > 0:
-                        inv = t_item[3]
+                        inv = t_item[consts.SMRY_INVESTED]
                         if inv != 0:
-                            next_annual_a = next_after * mult
-                            yoc_a = next_annual_a / inv * 100
+                            f = 100 / inv
+                            next_annual_a = next_after * num_of_div_payments_per_year
+                            yoc_a = next_annual_a * f
                             self.total_annual_div_a += next_annual_a
-                            t_item[idx.SMRY_YOC_A] = "{:.2f}%".format(yoc_a)
-                            t_item[idx.SMRY_ANN_DIV_A] = int(next_annual_a)
+                            t_item[consts.SMRY_YOC_A] = "{:.2f}%".format(yoc_a)
+                            t_item[consts.SMRY_ANN_DIV_A] = int(next_annual_a)
 
-                            next_annual_b = next_before * mult
-                            yoc_b = next_annual_b / inv * 100
+                            next_annual_b = next_before * num_of_div_payments_per_year
+                            yoc_b = next_annual_b * f
                             self.total_annual_div_b += next_annual_b
-                            t_item[idx.SMRY_YOC_B] = "{:.2f}%".format(yoc_b)
-                            t_item[idx.SMRY_ANN_DIV_B] = int(next_annual_b)
-
-        print(
-            f'total_annual_div_a:{self.total_annual_div_a} {self.total_annual_div_a + 2000} {(self.total_annual_div_a + 2000) / 12}')
+                            t_item[consts.SMRY_YOC_B] = "{:.2f}%".format(yoc_b)
+                            t_item[consts.SMRY_ANN_DIV_B] = int(next_annual_b)
 
     def update_dividend_table_with_div_increase_marker(self):
-        for ticker, t_list in self.dividendsMap.items():
-            [row.append('') for row in t_list]
-            for index, row in enumerate(t_list):
-                if 0 < index < len(t_list) - 2:
-                    prev_div = t_list[index - 1][4]
-                    current_div = row[4]
-                    if prev_div != current_div:
-                        if prev_div != 0:
-                            div_change = (current_div - prev_div) / prev_div * 100
-                            # print(row[0], current_div, prev_div, div_change)
-                            # sign = '='
-                            if prev_div > current_div:
-                                sign = '↓'
-                            else:
-                                sign = '↑'
-                            row[10] = '{:2.2f}% '.format(div_change) + sign
+        for ticker, divs in self.dividendsMap.items():
+            [row.append('') for row in divs]
+            for index, row in enumerate(divs):
+                if 0 < index < len(divs) - 2:
+                    prev_div = divs[index - 1][consts.DIV_DPS]
+                    current_div = row[consts.DIV_DPS]
+                    if prev_div != current_div and prev_div != 0:
+                        div_change = (current_div - prev_div) / prev_div * 100
+                        sign = consts.SIGN_INCR if prev_div < current_div else consts.SIGN_DECR
+                        row[consts.DIV_CHANGE] = '{:2.2f}% '.format(div_change) + sign
 
     def update_summary_table_with_div_increase_marker(self):
-        for ticker, t_list in self.dividendsMap.items():
-            no_of_divs = len(t_list) - 2
-            if no_of_divs < 2:
+        for ticker, divs in self.dividendsMap.items():
+            no_of_divs = len(divs) - 2
+            if no_of_divs < 1:
                 continue
-            freq = t_list[-3][1]
+            freq = divs[-3][consts.DIV_FREQ]
             cycle_length = freq_multiplier(freq)
             how_many_to_check = cycle_length if no_of_divs >= cycle_length else no_of_divs
-            result = '='
+            if no_of_divs < 2:
+                how_many_to_check = 0
+            result = consts.SIGN_SAME
             for x in range(how_many_to_check):
                 index = -3 - x
-                if '↑' in t_list[index][-1]:
-                    result = '↑'
+                sign = divs[index][-1]
+                if consts.SIGN_INCR in sign:
+                    result = consts.SIGN_INCR
                     break
-                if '↓' in t_list[index][-1]:
-                    result = '↓'
+                if consts.SIGN_DECR in sign:
+                    result = consts.SIGN_DECR
                     break
+            if how_many_to_check < cycle_length:
+                result = consts.SIGN_UNKNOWN
             for t_item in self.transactions_list:
-                # ['Ticker', '.', '#', 'Invested', 'Alloc', 'Yoc_A', 'Annual_A', 'Ann_A%' Yoc_B', 'Ann_A%', 'Name', 'Sector', '↕', 'b2']
-                #     0       1    2       3          4        5        6          7         8       9       10      11       12
-                if t_item[0] == ticker:
-                    if t_item[1] != '*':
-                        t_item[1] = result
-            # print(
-            #    f'{ticker} f={freq} len(divs): {len(t_list)} check last {how_many_to_check}   result:{result}')
+                if t_item[consts.SMRY_TICKER] == ticker and t_item[consts.SMRY_STATUS] != '*':
+                    t_item[consts.SMRY_STATUS] = result
 
     def update_summary_table_with_div_contrib_from_each_ticker(self):
+        factor = 100 / self.total_annual_div_a
         for t_item in self.transactions_list:
-            t_item[7] = '{:2.2f}% '.format(t_item[6] / self.total_annual_div_a * 100)
-            # t_item[10] = '{:2.2f}% '.format(t_item[9] / self.total_annual_div_b * 100)
+            t_item[consts.SMRY_ANN_DIV_A_PC] = '{:2.2f}% '.format(t_item[consts.SMRY_ANN_DIV_A] * factor)
 
     def fill_dividends(self):
         f = self.prefix + '/div.txt'
         return fileprocessor.process_file(f, self.dividends_processor, self.create_dividends_table_from_list)
 
     def get_dividend_results(self):
-        dividend_header = ['Ticker', 'F', 'YYYY-MM', '#', 'DPS', 'Before', 'YocB', 'After', 'YocA', 'Where', 'DivInc']
+        dividend_header = ['Ticker', 'F', 'YYYY-MM', '#', 'DPS', 'Fwd.AD_B', 'YocB', 'Fwd.AD_A', 'YocA', 'Where',
+                           'DivInc']
         return self.dividendsMap, dividend_header, self.total_annual_div_a, self.total_annual_div_b
