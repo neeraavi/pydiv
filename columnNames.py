@@ -29,6 +29,18 @@ SIGN_DECR = '-'
 SIGN_SAME = '='
 SIGN_UNKNOWN = '?'
 
+LBL_ACTIVE = 0
+LBL_INVESTED = 1
+LBL_FwdAnnDivB = 2
+LBL_YoC_B = 3
+LBL_FwdAnnDivB_M = 4
+LBL_FwdAnnDivA_before_deduction = 5
+LBL_FwdAnnDivA_after_deduction = 6
+LBL_YoC_A = 7
+LBL_FwdAnnDivA_M = 8
+
+TAX_Standard_deduction = 2000
+
 ALLOC_COLOR = 'wheat'
 # AFTER_TAX_COLOR = 'papayawhip'
 AFTER_TAX_COLOR = '#eafaf1'
