@@ -45,6 +45,7 @@ class Window(QtWidgets.QMainWindow):
         self.setup_shortcuts_and_connections()
         self.create_status_bar()
         self.fill_summary_table()
+        self.setFixedSize(self.width(), self.height())
 
     def setup_shortcuts_and_connections(self):
         self.shortcut = QtWidgets.QShortcut(QtGui.QKeySequence(QtGui.QKeySequence.StandardKey.Find), self)
@@ -53,6 +54,12 @@ class Window(QtWidgets.QMainWindow):
         self.closeShortcut.activated.connect(self.close)
         self.closeShortcut = QtWidgets.QShortcut(QtGui.QKeySequence(QtGui.QKeySequence.StandardKey.Cancel), self)
         self.closeShortcut.activated.connect(self.reset_main_filter)
+        self.closeShortcut = QtWidgets.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_F2), self)
+        self.closeShortcut.activated.connect(
+            lambda: self.ui.searchAllColumns.setChecked(not self.ui.searchAllColumns.isChecked()))
+        self.closeShortcut = QtWidgets.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_F3), self)
+        self.closeShortcut.activated.connect(
+            lambda: self.ui.showClosedPositions.setChecked(not self.ui.showClosedPositions.isChecked()))
         # self.ui.summaryView.setStyleSheet("alternate-background-color: #fefae0; background-color: white;")
         # self.ui.summaryView.setStyleSheet("""QTableView {  gridline-color: #F2D2BD;}""")
         self.ui.mainFilter.returnPressed.connect(self.main_filter_return_pressed)
@@ -72,7 +79,8 @@ class Window(QtWidgets.QMainWindow):
 
     def search_all_columns_changed(self):
         cols = -1 if self.ui.searchAllColumns.isChecked() else consts.SMRY_TICKER
-        self.ui.searchAllColumns.isChecked(cols)
+        # self.ui.searchAllColumns.isChecked(cols)
+        self.proxyModel.setFilterKeyColumn(cols)
 
     def fill_summary_table(self):
         # transaction calculations
@@ -191,21 +199,21 @@ class Window(QtWidgets.QMainWindow):
         self._label_[8].setFont(f)
 
     def update_status_bar(self, annual_div_a, annual_div_b):
-        t = 'FwdAnnDivA:  {m:0.0f}'.format(m=annual_div_a)
+        t = 'FwdAnnDivA: {m:0.0f}'.format(m=annual_div_a)
         self._label_[consts.LBL_FwdAnnDivA_before_deduction].setText(t)
         annual_div_after_deduction_claim = annual_div_a + consts.TAX_Standard_deduction
-        t = 'FwdAnnDivA:  {m:0.0f}'.format(m=annual_div_after_deduction_claim)
+        t = 'FwdAnnDivA: {m:0.0f}'.format(m=annual_div_after_deduction_claim)
         self._label_[consts.LBL_FwdAnnDivA_after_deduction].setText(t)
-        t = 'YoC_A:  {m:0.2f}%'.format(m=annual_div_after_deduction_claim / self.totalInvested * 100)
+        t = 'YoC_A: {m:0.2f}%'.format(m=annual_div_after_deduction_claim / self.totalInvested * 100)
         self._label_[consts.LBL_YoC_A].setText(t)
-        t = 'FwdAnnDivA_M:  {m:0.0f}'.format(m=annual_div_after_deduction_claim / 12)
+        t = 'FwdAnnDivA_M: {m:0.0f}'.format(m=annual_div_after_deduction_claim / 12)
         self._label_[consts.LBL_FwdAnnDivA_M].setText(t)
 
-        t = 'FwdAnnDivB:  {m:0.0f}'.format(m=annual_div_b)
+        t = 'FwdAnnDivB: {m:0.0f}'.format(m=annual_div_b)
         self._label_[consts.LBL_FwdAnnDivB].setText(t)
-        t = 'YoC_B:  {m:0.2f}%'.format(m=annual_div_b / self.totalInvested * 100)
+        t = 'YoC_B: {m:0.2f}%'.format(m=annual_div_b / self.totalInvested * 100)
         self._label_[consts.LBL_YoC_B].setText(t)
-        t = 'FwdAnnDivB_M:  {m:0.0f}'.format(m=annual_div_b / 12)
+        t = 'FwdAnnDivB_M: {m:0.0f}'.format(m=annual_div_b / 12)
         self._label_[consts.LBL_FwdAnnDivB_M].setText(t)
 
     def update_transaction_calendar(self, t):

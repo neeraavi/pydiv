@@ -199,7 +199,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>Show closed positions</string>
+       <string>F3: Show closed positions</string>
       </property>
      </widget>
      <widget class="QCheckBox" name="searchAllColumns">
@@ -212,7 +212,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>Search all columns</string>
+       <string>F2: Search all columns</string>
       </property>
      </widget>
     </widget>
