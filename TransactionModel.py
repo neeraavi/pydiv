@@ -24,7 +24,7 @@ class TransactionModel(QtCore.QAbstractTableModel):
                 return QtGui.QColor(consts.CLOSED_POS_COLOR)
         if role == Qt.TextAlignmentRole:
             colNum = index.column()
-            return Qt.AlignLeft if (colNum < 2) else Qt.AlignRight
+            return Qt.AlignLeft | Qt.AlignVCenter if (colNum < 2) else Qt.AlignRight | Qt.AlignVCenter
         if role != Qt.ItemDataRole.DisplayRole:
             # for all roles you're not interested in return python's None
             # which is interpreted as an invalid QVariant value

@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QApplication, QHeaderView, QLabel, QFrame
 import sys
 
 import dividends
-from DividendCalendarModel import DividendCalendarModel
+# from DividendCalendarModel import DividendCalendarModel
 from SummaryModel import SummaryModel
 from divui import Ui_MainWindow
 import transactions
@@ -69,7 +69,7 @@ class Window(QtWidgets.QMainWindow):
         self.closeShortcut = QtWidgets.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_B), self)
         self.closeShortcut.activated.connect(lambda: self.ui.beforeTax.setChecked(True))
         # self.ui.summaryView.setStyleSheet("alternate-background-color: #fefae0; background-color: white;")
-        # self.ui.summaryView.setStyleSheet("""QTableView {  gridline-color: #F2D2BD;}""")
+        # self.ui.summaryView.setStyleSheet("""QTableView {  gridline-color: seashell;}""")
         self.ui.mainFilter.returnPressed.connect(self.main_filter_return_pressed)
         self.ui.showClosedPositions.stateChanged.connect(self.show_closed_positions_changed)
         self.ui.searchAllColumns.stateChanged.connect(self.search_all_columns_changed)
@@ -214,7 +214,7 @@ class Window(QtWidgets.QMainWindow):
     def set_font(self):
         font = QtGui.QFont()
         font.setFamily("Ubuntu")
-        # font.setFamily("Roboto Regular")
+        # font.setFamily("Roboto Mono")
         font.setPointSize(9)
         self.ui.summaryView.setFont(font)
         self.ui.transactionsView.setFont(font)
@@ -273,12 +273,14 @@ class Window(QtWidgets.QMainWindow):
         # self.ui.investmentCalendarView.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         # self.ui.investmentCalendarView.horizontalHeader().setSectionResizeMode(len(investment_calendar_header) - 1,
         #                                                                       QtWidgets.QHeaderView.ResizeToContents)
-        self.ui.investmentCalendarView.setStyleSheet("alternate-background-color: #fefae0; background-color: white;")
+        self.ui.investmentCalendarView.setStyleSheet(
+            "alternate-background-color: floralwhite; background-color: white;")
         self.ui.investmentCalendarView.clicked.connect(self.investment_calendar_clicked)
 
     def update_dividend_calendar(self, d):
         (dividendCalendar, dividend_calendar_header, month_header) = d.get_dividend_calendar_before_tax()
-        self.dividendCalendarModel = DividendCalendarModel(dividendCalendar, dividend_calendar_header, month_header)
+        # self.dividendCalendarModel = DividendCalendarModel(dividendCalendar, dividend_calendar_header, month_header)
+        self.dividendCalendarModel = CalendarModel(dividendCalendar, dividend_calendar_header, month_header)
 
         proxy_model = QtCore.QSortFilterProxyModel(self)
         # proxy_model.setFilterKeyColumn(-1)  # Search all columns.
@@ -296,7 +298,7 @@ class Window(QtWidgets.QMainWindow):
         #    self.ui.dividendCalendarView.horizontalHeader().setSectionResizeMode(col,
         #                                                                         QtWidgets.QHeaderView.ResizeToContents)
 
-        self.ui.dividendCalendarView.setStyleSheet("alternate-background-color: #fefae0; background-color: white;")
+        self.ui.dividendCalendarView.setStyleSheet("alternate-background-color: floralwhite; background-color: white;")
         self.ui.dividendCalendarView.clicked.connect(self.dividend_calendar_clicked)
 
         # self.ui.dividendCalendarView.selectRow(0)

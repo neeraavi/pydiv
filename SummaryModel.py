@@ -38,6 +38,8 @@ class SummaryModel(QtCore.QAbstractTableModel):
                 return QtGui.QColor(consts.CLOSED_POS_COLOR)
         if role == Qt.TextAlignmentRole:
             colNum = index.column()
+            if colNum == 1:
+                return Qt.AlignVCenter | Qt.AlignCenter
             return Qt.AlignLeft if (colNum < 2 or colNum > 9) else Qt.AlignRight
         if role != Qt.ItemDataRole.DisplayRole:
             # for all roles you're not interested in return python's None
