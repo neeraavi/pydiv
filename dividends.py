@@ -1,3 +1,4 @@
+import calendar
 import fileprocessor
 import columnNames as consts
 
@@ -12,7 +13,10 @@ def freq_multiplier(f):
 
 
 class Dividends:
-    def __init__(self, start_year, prefix, transactions_list, total_investment):
+    def __init__(self, start_year, prefix, transactions_list, total_investment, current_date):
+        self.month_names = None
+        self.dividend_calendar_header = None
+        self.numOfYears = None
         self.total_annual_div_a = 0
         self.total_annual_div_b = 0
         self.prefix = prefix
@@ -23,16 +27,25 @@ class Dividends:
 
         # self.dividends = []
         self.dividendsMap = {}
-        # self.dividendsCalendar = []
-        # self.dividendsCalendarMap = {}#
+        self.dividendsCalendar = []
+        self.dividendsCalendarMap = {}  #
+        self.currentMonth = None
+        self.currentYear = None
+        self.now = current_date
 
-        # self.currentMonth = None
-        # self.currentYear = None
-        # self.now = None
         self.init_dividends_calendar()
 
     def init_dividends_calendar(self):
-        pass
+        self.dividend_calendar_header = [x for x in range(self.now.year, self.startYear - 1, -1)]
+        self.month_names = list(calendar.month_name)[1:13]
+        self.month_names.extend(['Total', 'Σ'])
+
+        for y in range(self.startYear, self.now.year + 1):
+            for m in range(1, 13):
+                ym = '{y}-{m:02d}'.format(y=y, m=m)
+                self.dividendsCalendarMap[ym] = 0
+        self.numOfYears = (self.now.year - self.startYear + 1)
+        self.dividendsCalendar = [[0] * self.numOfYears for i in range(12)]
 
     def dividends_processor(self, line):
         if line.startswith('#'):
@@ -55,10 +68,14 @@ class Dividends:
 
     def combine_with_same_ym_or_append(self, new_entry):
         ticker = new_entry[consts.DIV_TICKER]
+        ym = new_entry[consts.DIV_YM]
+        div_before = new_entry[consts.DIV_BEFORE]
+        self.dividendsCalendarMap[ym] += div_before
+
         for existing_row in self.dividendsMap[ticker]:
-            if existing_row[consts.DIV_YM] == new_entry[consts.DIV_YM]:
+            if existing_row[consts.DIV_YM] == ym:
                 existing_row[consts.DIV_NOS] += new_entry[consts.DIV_NOS]
-                existing_row[consts.DIV_BEFORE] += new_entry[consts.DIV_BEFORE]
+                existing_row[consts.DIV_BEFORE] += div_before
                 existing_row[consts.DIV_AFTER] += new_entry[consts.DIV_AFTER]
                 existing_row[consts.DIV_WHERE] = '~c~'
                 return
@@ -69,6 +86,27 @@ class Dividends:
         self.update_dividend_table_with_div_increase_marker()
         self.update_summary_table_with_div_increase_marker()
         self.update_summary_table_with_div_contrib_from_each_ticker()
+        self.update_dividends_calendar()
+
+    def update_dividends_calendar(self):
+        for y in range(self.startYear, self.now.year + 1):
+            for m in range(1, 13):
+                ym = '{y}-{m:02d}'.format(y=y, m=m)
+                self.dividendsCalendarMap[ym] = round(self.dividendsCalendarMap[ym])
+
+        for m in range(1, 13):
+            inner_list = self.dividendsCalendar[m - 1]
+            for y in range(self.now.year, self.startYear - 1, -1):
+                ym = '{y}-{m:02d}'.format(y=y, m=m)
+                inner_list[self.startYear - y - 1] = self.dividendsCalendarMap[ym]
+        total_row = [sum(i) for i in zip(*self.dividendsCalendar)]
+        self.dividendsCalendar.append(total_row)
+        sigma_row = [0] * len(total_row)
+        sigma_row[0] = sum(total_row)
+        sigma_row[2] = 'ϕ'
+        sigma_row[3] = round(sigma_row[0] / self.numOfYears)
+        self.dividendsCalendar.append(sigma_row)
+        print(total_row)
 
     def update_summary_table_with_dividend_info(self):
         # 0        1    2    3     4   5        6      7      8       9      10
@@ -167,6 +205,10 @@ class Dividends:
         return fileprocessor.process_file(f, self.dividends_processor, self.create_dividends_table_from_list)
 
     def get_dividend_results(self):
-        dividend_header = ['Ticker', 'F', 'YYYY-MM', '#', 'DPS', 'Fwd.AD_B', 'YocB', 'Fwd.AD_A', 'YocA', 'Where',
+        dividend_header = ['Ticker', 'F', 'YYYY-MM', '#', 'DPS', 'Div_B', 'YocB', 'Div_A', 'YocA', 'Where',
                            'DivInc']
         return self.dividendsMap, dividend_header, self.total_annual_div_a, self.total_annual_div_b
+
+    def get_dividend_calendar_before_tax(self):
+        self.dividendsCalendar = [[' ' if x == 0 else x for x in l] for l in self.dividendsCalendar]
+        return self.dividendsCalendar, self.dividend_calendar_header, self.month_names

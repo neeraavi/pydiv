@@ -1,10 +1,9 @@
-from datetime import datetime
 import calendar
 import fileprocessor
 
 
 class Transactions:
-    def __init__(self, start_year, prefix):
+    def __init__(self, start_year, prefix, current_date):
         self.numOfYears = None
         self.prefix = prefix
         self.totalInvested = 0
@@ -15,11 +14,10 @@ class Transactions:
         self.startYear = start_year
         self.currentMonth = None
         self.currentYear = None
-        self.now = None
+        self.now = current_date
         self.init_investment_calendar()
 
     def init_investment_calendar(self):
-        self.now = datetime.now()
         for y in range(self.startYear, self.now.year + 1):
             for m in range(1, 13):
                 ym = '{y}-{m:02d}'.format(y=y, m=m)
