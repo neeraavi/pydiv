@@ -20,8 +20,8 @@ class DividendCalendarModel(TransactionModel):
             if row == 13:
                 return QtGui.QColor(consts.NEXT_COLOR)
         if role == Qt.ForegroundRole:
-            if '*' in str(d[1]):
-                return QtGui.QColor('#ff0000')
+            if "*" in str(d[1]):
+                return QtGui.QColor("#ff0000")
         if role == Qt.TextAlignmentRole:
             return Qt.AlignRight | Qt.AlignVCenter
         if role != Qt.ItemDataRole.DisplayRole:

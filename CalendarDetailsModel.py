@@ -19,8 +19,8 @@ class CalendarDetailsModel(TransactionModel):
         # if index.row() == 13:
         #    return QtGui.QColor('#e9edc9')
         if role == Qt.ForegroundRole:
-            if '*' in str(d[1]):
-                return QtGui.QColor('#ff0000')
+            if "*" in str(d[1]):
+                return QtGui.QColor("#ff0000")
         if role == Qt.TextAlignmentRole:
             colNum = index.column()
             return Qt.AlignRight

@@ -24,8 +24,13 @@ class Ui_MainWindow(object):
         self.tab_1.setObjectName("tab_1")
         self.summaryView = QtWidgets.QTableView(self.tab_1)
         self.summaryView.setGeometry(QtCore.QRect(10, 10, 1081, 351))
+        font = QtGui.QFont()
+        font.setFamily("FiraCode Nerd Font")
+        self.summaryView.setFont(font)
         self.summaryView.setAutoFillBackground(False)
-        self.summaryView.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustIgnored)
+        self.summaryView.setSizeAdjustPolicy(
+            QtWidgets.QAbstractScrollArea.AdjustIgnored
+        )
         self.summaryView.setTabKeyNavigation(False)
         self.summaryView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.summaryView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
@@ -46,7 +51,9 @@ class Ui_MainWindow(object):
         font.setFamily("Noto Mono")
         font.setPointSize(9)
         self.transactionsView.setFont(font)
-        self.transactionsView.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
+        self.transactionsView.setSizeAdjustPolicy(
+            QtWidgets.QAbstractScrollArea.AdjustToContents
+        )
         self.transactionsView.setSortingEnabled(True)
         self.transactionsView.setObjectName("transactionsView")
         self.transactionsView.horizontalHeader().setStretchLastSection(False)
@@ -112,7 +119,9 @@ class Ui_MainWindow(object):
         font.setPointSize(10)
         self.investmentCalendarView.setFont(font)
         self.investmentCalendarView.setAlternatingRowColors(True)
-        self.investmentCalendarView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.investmentCalendarView.setSelectionMode(
+            QtWidgets.QAbstractItemView.SingleSelection
+        )
         self.investmentCalendarView.setCornerButtonEnabled(False)
         self.investmentCalendarView.setObjectName("investmentCalendarView")
         self.investmentCalendarView.horizontalHeader().setStretchLastSection(True)
@@ -150,20 +159,34 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.label.setText(_translate("MainWindow", "Transactions"))
         self.label_2.setText(_translate("MainWindow", "Dividends"))
-        self.showClosedPositions.setText(_translate("MainWindow", "F3: Show closed positions"))
-        self.searchAllColumns.setText(_translate("MainWindow", "F2: Search all columns"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_1), _translate("MainWindow", "Summary"))
+        self.showClosedPositions.setText(
+            _translate("MainWindow", "F3: Show closed positions")
+        )
+        self.searchAllColumns.setText(
+            _translate("MainWindow", "F2: Search all columns")
+        )
+        self.tabWidget.setTabText(
+            self.tabWidget.indexOf(self.tab_1), _translate("MainWindow", "Summary")
+        )
         self.dividendCalendar.setTitle(_translate("MainWindow", "Dividend calendar"))
         self.beforeTax.setText(_translate("MainWindow", "Before tax"))
         self.afterTax.setText(_translate("MainWindow", "After tax"))
-        self.investmentCalendar.setTitle(_translate("MainWindow", "Investment calendar"))
+        self.investmentCalendar.setTitle(
+            _translate("MainWindow", "Investment calendar")
+        )
         self.calendarDetailsMode.setText(_translate("MainWindow", "Investment details"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "Calendar"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("MainWindow", "Diversification"))
+        self.tabWidget.setTabText(
+            self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "Calendar")
+        )
+        self.tabWidget.setTabText(
+            self.tabWidget.indexOf(self.tab_3),
+            _translate("MainWindow", "Diversification"),
+        )
 
 
 if __name__ == "__main__":
     import sys
+
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()

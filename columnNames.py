@@ -24,10 +24,10 @@ DIV_YOC_A = 8
 DIV_WHERE = 9
 DIV_CHANGE = 10
 
-SIGN_INCR = '+'
-SIGN_DECR = '-'
-SIGN_SAME = '='
-SIGN_UNKNOWN = '?'
+SIGN_INCR = "+"
+SIGN_DECR = "-"
+SIGN_SAME = "="
+SIGN_UNKNOWN = "?"
 
 LBL_ACTIVE = 0
 LBL_INVESTED = 1
@@ -41,14 +41,14 @@ LBL_FwdAnnDivA_M = 8
 
 TAX_Standard_deduction = 2000
 
-ALLOC_COLOR = 'wheat'
+ALLOC_COLOR = "wheat"
 # AFTER_TAX_COLOR = 'papayawhip'
-AFTER_TAX_COLOR = 'beige'  # '#eafaf1'
-BEFORE_TAX_COLOR = 'linen'  # 'moccasin'  # 'seashell'
-INCR_COLOR = '#d8f3dc'
-DECR_COLOR = 'mistyrose'
-SAME_COLOR = 'honeydew'
-UNKNOWN_COLOR = '#edf2fb'
-CLOSED_POS_COLOR = '#9c6644'
-TOTAL_COLOR = 'bisque'
-NEXT_COLOR = 'antiquewhite'
+AFTER_TAX_COLOR = "beige"  # '#eafaf1'
+BEFORE_TAX_COLOR = "linen"  # 'moccasin'  # 'seashell'
+INCR_COLOR = "#d8f3dc"
+DECR_COLOR = "mistyrose"
+SAME_COLOR = "honeydew"
+UNKNOWN_COLOR = "#edf2fb"
+CLOSED_POS_COLOR = "#9c6644"
+TOTAL_COLOR = "bisque"
+NEXT_COLOR = "antiquewhite"

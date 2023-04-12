@@ -39,6 +39,12 @@
         <height>351</height>
        </rect>
       </property>
+      <property name="font">
+       <font>
+        <family>Fira Code</family>
+        <pointsize>10</pointsize>
+       </font>
+      </property>
       <property name="autoFillBackground">
        <bool>false</bool>
       </property>
@@ -368,6 +374,36 @@
      <attribute name="title">
       <string>Diversification</string>
      </attribute>
+     <widget class="QListView" name="listView">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>451</width>
+        <height>301</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QGraphicsView" name="graphicsView">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>320</y>
+        <width>1071</width>
+        <height>221</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QGraphicsView" name="graphicsView_2">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>550</y>
+        <width>1071</width>
+        <height>221</height>
+       </rect>
+      </property>
+     </widget>
     </widget>
    </widget>
   </widget>
@@ -377,7 +413,7 @@
      <x>0</x>
      <y>0</y>
      <width>1119</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>

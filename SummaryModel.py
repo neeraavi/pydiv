@@ -28,19 +28,23 @@ class SummaryModel(QtCore.QAbstractTableModel):
                     return QtGui.QColor(consts.INCR_COLOR)
                 elif consts.SIGN_SAME in div_change:
                     return QtGui.QColor(consts.SAME_COLOR)
-                elif '' == div_change:
+                elif "" == div_change:
                     return QtGui.QColor(consts.UNKNOWN_COLOR)
                 elif consts.SIGN_DECR in div_change:
                     return QtGui.QColor(consts.DECR_COLOR)
 
         if role == Qt.ForegroundRole:
-            if '*' in str(d[1]):
+            if "*" in str(d[1]):
                 return QtGui.QColor(consts.CLOSED_POS_COLOR)
         if role == Qt.TextAlignmentRole:
             colNum = index.column()
             if colNum == 1:
-                return Qt.AlignVCenter | Qt.AlignCenter
-            return Qt.AlignLeft if (colNum < 2 or colNum > 9) else Qt.AlignRight
+                return Qt.AlignCenter | Qt.AlignVCenter
+            return (
+                Qt.AlignLeft | Qt.AlignVCenter
+                if (colNum < 2 or colNum > 9)
+                else Qt.AlignRight | Qt.AlignVCenter
+            )
         if role != Qt.ItemDataRole.DisplayRole:
             # for all roles you're not interested in return python's None
             # which is interpreted as an invalid QVariant value

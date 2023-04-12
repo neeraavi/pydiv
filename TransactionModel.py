@@ -4,7 +4,7 @@ import columnNames as consts
 
 
 class TransactionModel(QtCore.QAbstractTableModel):
-    def __init__(self, data, hlabels, vlabels=None):
+    def __init__(self, data, hlabels, vlabels=[]):
         super(TransactionModel, self).__init__()
         self._data = data
         self.horizontal_header_labels = hlabels
@@ -17,14 +17,18 @@ class TransactionModel(QtCore.QAbstractTableModel):
         col = index.column()
         d = self._data[row]
         if role == Qt.BackgroundRole:
-            if 'Total' in str(d[0]):
+            if "Total" in str(d[0]):
                 return QtGui.QColor(consts.TOTAL_COLOR)
         if role == Qt.ForegroundRole:
-            if '*' in str(d[1]):
+            if "*" in str(d[1]):
                 return QtGui.QColor(consts.CLOSED_POS_COLOR)
         if role == Qt.TextAlignmentRole:
             colNum = index.column()
-            return Qt.AlignLeft | Qt.AlignVCenter if (colNum < 2) else Qt.AlignRight | Qt.AlignVCenter
+            return (
+                Qt.AlignLeft | Qt.AlignVCenter
+                if (colNum < 2)
+                else Qt.AlignRight | Qt.AlignVCenter
+            )
         if role != Qt.ItemDataRole.DisplayRole:
             # for all roles you're not interested in return python's None
             # which is interpreted as an invalid QVariant value
@@ -47,5 +51,5 @@ class TransactionModel(QtCore.QAbstractTableModel):
             return None
         if orientation == Qt.Horizontal:
             return self.horizontal_header_labels[section]
-        if orientation == Qt.Vertical:
+        if orientation == Qt.Vertical and section < len(self.vertical_header_labels):
             return self.vertical_header_labels[section]
