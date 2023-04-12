@@ -26,8 +26,10 @@ class Dividends:
         self.tax_factor = 1 - 0.27  # Bruttodividenden – 26,375 % = Nettodividenden)
 
         self.dividendsMap = {}
-        self.dividendsCalendar = []
-        self.dividendsCalendarMap = {}
+        self.dividends_calendar_before_tax = []
+        self.dividends_calendar_after_tax = []
+        self.dividends_calendar_map_before_tax = {}
+        self.dividends_calendar_map_after_tax = {}
         self.currentMonth = None
         self.currentYear = None
         self.now = current_date
@@ -43,9 +45,11 @@ class Dividends:
         for y in range(self.startYear, self.now.year + 1):
             for m in range(1, 13):
                 ym = "{y}-{m:02d}".format(y=y, m=m)
-                self.dividendsCalendarMap[ym] = 0
+                self.dividends_calendar_map_before_tax[ym] = 0
+                self.dividends_calendar_map_after_tax[ym] = 0
         self.numOfYears = self.now.year - self.startYear + 1
-        self.dividendsCalendar = [[0] * self.numOfYears for _ in range(12)]
+        self.dividends_calendar_before_tax = [[0] * self.numOfYears for _ in range(12)]
+        self.dividends_calendar_after_tax = [[0] * self.numOfYears for _ in range(12)]
 
     def fill_dividends(self):
         f = self.prefix + "/div.txt"
@@ -74,13 +78,15 @@ class Dividends:
         ticker = new_entry[consts.DIV_TICKER]
         ym = new_entry[consts.DIV_YM]
         div_before = new_entry[consts.DIV_BEFORE]
-        self.dividendsCalendarMap[ym] += div_before
+        div_after = new_entry[consts.DIV_AFTER]
+        self.dividends_calendar_map_before_tax[ym] += div_before
+        self.dividends_calendar_map_after_tax[ym] += div_after
 
         for existing_row in self.dividendsMap[ticker]:
             if existing_row[consts.DIV_YM] == ym:
                 existing_row[consts.DIV_NOS] += new_entry[consts.DIV_NOS]
                 existing_row[consts.DIV_BEFORE] += div_before
-                existing_row[consts.DIV_AFTER] += new_entry[consts.DIV_AFTER]
+                existing_row[consts.DIV_AFTER] += div_after
                 existing_row[consts.DIV_WHERE] = "~c~"
                 return
         self.dividendsMap[ticker].append(new_entry)
@@ -183,20 +189,32 @@ class Dividends:
         for y in range(self.startYear, self.now.year + 1):
             for m in range(1, 13):
                 ym = "{y}-{m:02d}".format(y=y, m=m)
-                self.dividendsCalendarMap[ym] = round(self.dividendsCalendarMap[ym])
+                self.dividends_calendar_map_before_tax[ym] = round(self.dividends_calendar_map_before_tax[ym])
+                self.dividends_calendar_map_after_tax[ym] = round(self.dividends_calendar_map_after_tax[ym])
 
         for m in range(1, 13):
-            inner_list = self.dividendsCalendar[m - 1]
+            inner_list_before = self.dividends_calendar_before_tax[m - 1]
+            inner_list_after = self.dividends_calendar_after_tax[m - 1]
             for y in range(self.now.year, self.startYear - 1, -1):
                 ym = "{y}-{m:02d}".format(y=y, m=m)
-                inner_list[self.startYear - y - 1] = self.dividendsCalendarMap[ym]
-        total_row = [sum(i) for i in zip(*self.dividendsCalendar)]
-        self.dividendsCalendar.append(total_row)
-        sigma_row = [0] * len(total_row)
-        sigma_row[0] = sum(total_row)
+                inner_list_before[self.startYear - y - 1] = self.dividends_calendar_map_before_tax[ym]
+                inner_list_after[self.startYear - y - 1] = self.dividends_calendar_map_after_tax[ym]
+
+        total_row_before = [sum(i) for i in zip(*self.dividends_calendar_before_tax)]
+        self.dividends_calendar_before_tax.append(total_row_before)
+        sigma_row = [0] * len(total_row_before)
+        sigma_row[0] = sum(total_row_before)
         sigma_row[2] = "ϕ"
         sigma_row[3] = round(sigma_row[0] / self.numOfYears)
-        self.dividendsCalendar.append(sigma_row)
+        self.dividends_calendar_before_tax.append(sigma_row)
+
+        total_row_after = [sum(i) for i in zip(*self.dividends_calendar_after_tax)]
+        self.dividends_calendar_after_tax.append(total_row_after)
+        sigma_row = [0] * len(total_row_after)
+        sigma_row[0] = sum(total_row_after)
+        sigma_row[2] = "ϕ"
+        sigma_row[3] = round(sigma_row[0] / self.numOfYears)
+        self.dividends_calendar_after_tax.append(sigma_row)
         # print(total_row)
 
     def update_summary_table_with_div_contrib_from_each_ticker(self):
@@ -209,5 +227,7 @@ class Dividends:
         return self.dividendsMap, dividend_header, self.total_annual_div_a, self.total_annual_div_b
 
     def get_dividend_calendar_before_tax(self):
-        self.dividendsCalendar = [['' if x == 0 else x for x in l] for l in self.dividendsCalendar]
-        return self.dividendsCalendar, self.dividend_calendar_header, self.month_names
+        return self.dividends_calendar_before_tax, self.dividend_calendar_header, self.month_names
+
+    def get_dividend_calendar_after_tax(self):
+        return self.dividends_calendar_after_tax, self.dividend_calendar_header, self.month_names

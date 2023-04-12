@@ -1,5 +1,6 @@
 from operator import itemgetter
 import json
+
 from datetime import datetime
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt, QItemSelectionModel
@@ -15,6 +16,21 @@ from CalendarModel import CalendarModel
 from CalendarDetailsModel import CalendarDetailsModel
 from DividendModel import DividendModel
 import columnNames as consts
+
+
+def get_last_1_2_6_12_ym(y, m):
+    import datetime as datetime
+    today = datetime.datetime.now()
+    result = []
+    if y == today.year and m == today.month:
+        prev = [1, 2, 6, 12]
+        first = today.replace(day=1)
+        for m in prev:
+            before = first - datetime.timedelta(days=m * 30 + 5)
+            before = before.strftime("%Y-%m")
+            result.append(before)
+    print(result)
+    return result
 
 
 def resize_columns_for_details_view(view, cols):
@@ -38,6 +54,7 @@ def resize_columns_for_calendar_view(view):
 class Window(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         super(Window, self).__init__(parent)
+        self.div_obj = None
         self.dividendCalendarModel = None
         self.investmentCalendarModel = None
         self._label_ = []
@@ -63,12 +80,12 @@ class Window(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
 
         self.setup_shortcuts()
-        self.setup_connections()
         self.create_status_bar()
         self.fill_summary_table()
         self.display_summary_table()
         self.set_font()
         self.setFixedSize(self.width(), self.height())
+        self.setup_connections()
 
     def setup_shortcuts(self):
         # @formatter:off
@@ -79,14 +96,23 @@ class Window(QtWidgets.QMainWindow):
             [QtCore.Qt.Key_F2, lambda: self.ui.searchAllColumns.setChecked(not self.ui.searchAllColumns.isChecked())],
             [QtCore.Qt.Key_F3, lambda: self.ui.showClosedPositions.setChecked(not self.ui.showClosedPositions.isChecked())],
             [QtCore.Qt.Key_Tab, self.next_tab],
-            [QtCore.Qt.Key_A, lambda: self.ui.afterTax.setChecked(True)],
-            [QtCore.Qt.Key_B, lambda: self.ui.beforeTax.setChecked(True)],
+            [QtCore.Qt.Key_NumberSign, self.toggle_before_after],
         ]
         # @formatter:on
 
         for item in key_function_mapping:
             shortcut = QtWidgets.QShortcut(item[0], self)
             shortcut.activated.connect(item[1])
+
+    def toggle_before_after(self):
+        tab = self.ui.tabWidget
+        cur_index = tab.currentIndex()
+        if cur_index == 1:
+            c = self.ui.afterTax.isChecked()
+            if c:
+                self.ui.beforeTax.setChecked(True)
+            else:
+                self.ui.afterTax.setChecked(True)
 
     def update_on_closed_positions_changed(self):
         (self.selected_summary, self.visible_tickers) = self.select_summary_based_on_show_closed_positions()
@@ -110,6 +136,7 @@ class Window(QtWidgets.QMainWindow):
         self.ui.showClosedPositions.stateChanged.connect(self.update_on_closed_positions_changed)
         self.ui.searchAllColumns.stateChanged.connect(self.search_all_columns_changed)
         self.ui.mainFilter.textChanged.connect(self.ticker_filter_changed)
+        self.ui.beforeTax.toggled.connect(lambda: self.update_dividend_calendar(self.div_obj))
 
     def fill_summary_table(self):
         self.do_calculations_on_transactions()
@@ -124,9 +151,10 @@ class Window(QtWidgets.QMainWindow):
         self._tickers_active_only = [x[consts.SMRY_TICKER] for x in self.summary_active_positions_only]
 
     def do_calculations_on_dividends(self):
-        d = Dividends.Dividends(self.startYear, self.pathPrefix, self.summary, self.totalInvested, self.now)
-        self.update_dividend_calendar(d)
-        (self.dividendMap, self.dividendHeader, self.annual_div_a, self.annual_div_b) = d.get_dividend_results()
+        self.div_obj = Dividends.Dividends(self.startYear, self.pathPrefix, self.summary, self.totalInvested, self.now)
+        self.update_dividend_calendar(self.div_obj)
+        (self.dividendMap, self.dividendHeader, self.annual_div_a,
+         self.annual_div_b) = self.div_obj.get_dividend_results()
         self.update_status_bar()
 
     def display_summary_table(self):
@@ -268,8 +296,13 @@ class Window(QtWidgets.QMainWindow):
         view.clicked.connect(self.investment_calendar_clicked)
 
     def update_dividend_calendar(self, d):
-        (dividendCalendar, dividend_calendar_header, month_header) = d.get_dividend_calendar_before_tax()
-        self.dividendCalendarModel = CalendarModel(dividendCalendar, dividend_calendar_header, month_header)
+        if self.ui.beforeTax.isChecked():
+            (dividends_calendar, dividend_calendar_header, month_header) = d.get_dividend_calendar_before_tax()
+        else:
+            (dividends_calendar, dividend_calendar_header, month_header) = d.get_dividend_calendar_after_tax()
+
+        dividends_calendar = [['' if x == 0 else x for x in l] for l in dividends_calendar]
+        self.dividendCalendarModel = CalendarModel(dividends_calendar, dividend_calendar_header, month_header)
 
         proxy_model = QtCore.QSortFilterProxyModel(self)
         proxy_model.setSourceModel(self.dividendCalendarModel)
@@ -320,12 +353,36 @@ class Window(QtWidgets.QMainWindow):
         ym = "{y}-{m:02d}".format(m=m, y=y)
         result = [row for ticker, items in self.dividendMap.items() for row in items if ym in row[consts.DIV_YM]]
         result = sorted(result, key=itemgetter(consts.DIV_TICKER))
+        current_tickers = set([r[0] for r in result])
+        if len(result) > 0:
+            div_b = sum(row[consts.DIV_BEFORE] for row in result)
+            div_a = sum(row[consts.DIV_AFTER] for row in result)
+            nos = len(result)
+            row = ['Total', nos, '', '', '', div_b, '', div_a, '', '', '']
+            result.append(row)
+
         self.calendarDetailsModel = CalendarDetailsModel(result, self.dividendHeader, [])
         self.ui.calendarDetailsMode.setText(f"Dividends in {ym}")
 
         view = self.ui.calendarDetailsView
         indices_to_hide = [consts.DIV_YOC_A, consts.DIV_YOC_B, consts.DIV_WHERE, consts.DIV_CHANGE]
         self.redisplay(view, indices_to_hide)
+        
+        prev = get_last_1_2_6_12_ym(y, m)
+        prev_tickers = []
+        if len(prev) == 4:
+            f = ['M', 'Q', 'B', 'A']
+            for count, freq in enumerate(f):
+                t = [row[0] for ticker, items in self.dividendMap.items() for row in items if
+                     prev[count] in row[consts.DIV_YM] and row[consts.DIV_FREQ] == freq]
+                print(len(t))
+                prev_tickers.extend(t)
+            prev_tickers = set(prev_tickers)
+            print(prev_tickers, len(prev_tickers))
+            expected = prev_tickers.difference(current_tickers)
+            new = current_tickers.difference(prev_tickers)
+            print(len(expected), expected)
+            print(len(new), new)
 
     def redisplay(self, view, indices_to_hide):
         view.setModel(self.calendarDetailsModel)
