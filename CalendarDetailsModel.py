@@ -11,10 +11,17 @@ class CalendarDetailsModel(TransactionModel):
     def data(self, index, role):
         if not index.isValid():
             return None
-        d = self._data[index.row()]
+        row = index.row()
+        col = index.column()
+        d = self._data[row]
+        n = str(d[0])
         if role == Qt.BackgroundRole:
-            if "Total" in str(d[0]):
+            if "Total" in n:
                 return QtGui.QColor(consts.TOTAL_COLOR)
+            if "##" in n:
+                return QtGui.QColor(consts.EXPECTED_TOTAL_MDIV_COLOR)
+            if "Expected" in n:
+                return QtGui.QColor(consts.EXPECTED_DIV_COLOR_BG)
         # if index.row() == 12:
         #    return QtGui.QColor('#ffe4c4')
         # if index.row() == 13:
@@ -22,13 +29,22 @@ class CalendarDetailsModel(TransactionModel):
         # if index.row() == 13:
         #    return QtGui.QColor('#e9edc9')
         if role == Qt.ForegroundRole:
-            if "*" in str(d[1]):
-                return QtGui.QColor("#ff0000")
+            # if col == 0:
+            if n.startswith('.'):
+                return QtGui.QColor(consts.NEW_DIV_COLOR)
+            if n.startswith('~'):
+                return QtGui.QColor(consts.EXPECTED_DIV_COLOR)
         if role == Qt.TextAlignmentRole:
-            colNum = index.column()
+            # colNum = index.column()
             return Qt.AlignRight
         if role != Qt.ItemDataRole.DisplayRole:
             # for all roles you're not interested in return python's None
             # which is interpreted as an invalid QVariant value
             return None
-        return self._data[index.row()][index.column()]
+        val = self._data[index.row()][col]
+        if col == consts.DIV_AFTER or col == consts.DIV_BEFORE:
+            return "{:.2f}".format(val)
+        # if col == consts.DPS :
+        #    print('xx', val)
+        # return "{:.3f}".format(val)
+        return val

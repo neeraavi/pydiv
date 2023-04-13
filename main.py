@@ -1,4 +1,6 @@
+import copy
 from operator import itemgetter
+import fileprocessor
 import json
 
 from datetime import datetime
@@ -29,7 +31,7 @@ def get_last_1_2_6_12_ym(y, m):
             before = first - datetime.timedelta(days=m * 30 + 5)
             before = before.strftime("%Y-%m")
             result.append(before)
-    print(result)
+    # sprint(result)
     return result
 
 
@@ -44,10 +46,11 @@ def resize_columns_for_details_view(view, cols):
 
 def resize_columns_for_calendar_view(view):
     view.horizontalHeader().setStretchLastSection(True)
-    view.verticalHeader().setStretchLastSection(True)
+    view.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+    view.verticalHeader().setStretchLastSection(False)
     for i in range(9):  # last nine years - fixed column width
         view.setColumnWidth(i, 50)
-    view.setColumnWidth(0, 60)
+    view.setColumnWidth(0, 80)
     view.setStyleSheet("alternate-background-color: floralwhite; background-color: white;")
 
 
@@ -352,22 +355,22 @@ class Window(QtWidgets.QMainWindow):
 
         ym = "{y}-{m:02d}".format(m=m, y=y)
         result = [row for ticker, items in self.dividendMap.items() for row in items if ym in row[consts.DIV_YM]]
+        result = copy.deepcopy(result)
         result = sorted(result, key=itemgetter(consts.DIV_TICKER))
         current_tickers = set([r[0] for r in result])
+        div_a = 0
+        div_b = 0
+        for r in result:
+            r[consts.DIV_DPS] = "{m:0.2f}".format(m=r[consts.DIV_DPS])
+            # print(r[consts.DIV_DPS])
         if len(result) > 0:
             div_b = sum(row[consts.DIV_BEFORE] for row in result)
             div_a = sum(row[consts.DIV_AFTER] for row in result)
             nos = len(result)
-            row = ['Total', nos, '', '', '', div_b, '', div_a, '', '', '']
+            row = ['Total', nos, '', '', '', round(div_b), '', round(div_a), '', '', '']
             result.append(row)
 
-        self.calendarDetailsModel = CalendarDetailsModel(result, self.dividendHeader, [])
-        self.ui.calendarDetailsMode.setText(f"Dividends in {ym}")
-
-        view = self.ui.calendarDetailsView
-        indices_to_hide = [consts.DIV_YOC_A, consts.DIV_YOC_B, consts.DIV_WHERE, consts.DIV_CHANGE]
-        self.redisplay(view, indices_to_hide)
-        
+        # -------------------------------------------------------
         prev = get_last_1_2_6_12_ym(y, m)
         prev_tickers = []
         if len(prev) == 4:
@@ -375,20 +378,72 @@ class Window(QtWidgets.QMainWindow):
             for count, freq in enumerate(f):
                 t = [row[0] for ticker, items in self.dividendMap.items() for row in items if
                      prev[count] in row[consts.DIV_YM] and row[consts.DIV_FREQ] == freq]
-                print(len(t))
+                # print(len(t))
                 prev_tickers.extend(t)
             prev_tickers = set(prev_tickers)
-            print(prev_tickers, len(prev_tickers))
+            # print(prev_tickers, len(prev_tickers))
             expected = prev_tickers.difference(current_tickers)
-            new = current_tickers.difference(prev_tickers)
-            print(len(expected), expected)
-            print(len(new), new)
 
-    def redisplay(self, view, indices_to_hide):
+            new = current_tickers.difference(prev_tickers)
+            # print(len(new), new)
+            if len(new) > 0:
+                for row in result:
+                    for n in new:
+                        if row[consts.SMRY_TICKER] == n:
+                            row[consts.SMRY_TICKER] = f'. {row[consts.SMRY_TICKER]}'
+
+            # print(len(expected), expected)
+            e_divs = []
+            for row in self.summary:
+                ticker = row[consts.SMRY_TICKER]
+                if ticker in expected:
+                    divs = self.dividendMap[ticker]
+                    d = divs[-3]
+                    # print(d)
+                    f = d[consts.DIV_FREQ]
+                    dps = d[consts.DIV_DPS]
+                    ppy = fileprocessor.payments_per_year(f)
+                    # print(ticker, row[consts.SMRY_ANN_DIV_A], row[consts.SMRY_ANN_DIV_B],
+                    #      row[consts.SMRY_STATUS], f, dps, '##', ppy)
+                    e_b = row[consts.SMRY_ANN_DIV_B] / ppy
+                    e_a = row[consts.SMRY_ANN_DIV_A] / ppy
+                    e_row = [f'~ {ticker}', f, '', row[consts.SMRY_NOS], dps, e_b, '', e_a, '', '', '']
+                    e_divs.append(e_row)
+
+            e_divs = sorted(e_divs, key=itemgetter(consts.DIV_TICKER))
+            if len(e_divs) > 0:
+                for r in e_divs:
+                    r[consts.DIV_DPS] = "{m:0.2f}".format(m=r[consts.DIV_DPS])
+                div_e_b = sum(row[consts.DIV_BEFORE] for row in e_divs)
+                div_e_a = sum(row[consts.DIV_AFTER] for row in e_divs)
+                nos = len(e_divs)
+                row = ['Expected', nos, '', '', '', round(div_e_b), '', round(div_e_a), '', '', '']
+                e_divs.append(row)
+                row = ['##', nos, '', '', '', round(div_b + div_e_b), '', round(div_a + div_e_a), '', '', '']
+                e_divs.append(row)
+
+            result.extend(e_divs)
+        # print(result)
+        # -------------------------------------------------------
+        self.calendarDetailsModel = CalendarDetailsModel(result, self.dividendHeader, [])
+        self.ui.calendarDetailsMode.setText(f"Dividends in {ym}")
+
+        view = self.ui.calendarDetailsView
+        indices_to_hide = [consts.DIV_YOC_A, consts.DIV_YOC_B, consts.DIV_WHERE, consts.DIV_CHANGE]
+        self.redisplay(view, indices_to_hide, len(result))
+
+    def redisplay(self, view, indices_to_hide, row_count):
         view.setModel(self.calendarDetailsModel)
-        for col in indices_to_hide:
-            view.setColumnHidden(col, True)
-        view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        if row_count > 0:
+            for col in indices_to_hide:
+                view.setColumnHidden(col, True)
+            # view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+            # view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+            for i in range(9):
+                view.setColumnWidth(i, 60)
+            view.setColumnWidth(0, 100)
+            view.setColumnWidth(2, 80)
+            view.horizontalHeader().setSectionResizeMode(consts.DIV_BEFORE, QHeaderView.Stretch)
         view.show()
 
     def next_tab(self):

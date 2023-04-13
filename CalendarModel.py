@@ -18,6 +18,8 @@ class CalendarModel(TransactionModel):
             if row == 12:
                 return QtGui.QColor(consts.TOTAL_COLOR)
             if row == 13:
+                return QtGui.QColor(consts.AVG_ROW_COLOR)
+            if row == 14:
                 return QtGui.QColor(consts.NEXT_COLOR)
         if role == Qt.ForegroundRole:
             if "*" in str(d[1]):

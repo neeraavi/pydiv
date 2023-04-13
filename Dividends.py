@@ -3,15 +3,6 @@ import fileprocessor
 import columnNames as consts
 
 
-def payments_per_year(f):
-    if f == "A": return 1
-    if f == "B": return 2
-    if f == "Q": return 4
-    if f == "M": return 12
-    print("Unknown freq:", f)
-    return 0
-
-
 class Dividends:
     def __init__(self, start_year, prefix, transactions_list, total_investment, current_date):
         self.month_names = None
@@ -40,7 +31,7 @@ class Dividends:
     def init_dividends_calendar(self):
         self.dividend_calendar_header = [x for x in range(self.now.year, self.startYear - 1, -1)]
         self.month_names = list(calendar.month_name)[1:13]
-        self.month_names.extend(["Total", "Σ"])
+        self.month_names.extend(["Total", "Avg.","Σ"])
 
         for y in range(self.startYear, self.now.year + 1):
             for m in range(1, 13):
@@ -109,7 +100,7 @@ class Dividends:
             (last_div_nos, dps, last_div_before) = last_row[consts.DIV_NOS: consts.DIV_BEFORE + 1]
             d_rows.append(["Total", "", "", "", "", before_total, "", after_total, "", ""])
 
-            num_of_div_payments_per_year = payments_per_year(f)
+            num_of_div_payments_per_year = fileprocessor.payments_per_year(f)
             last_effective_dps = last_div_before / last_div_nos
             for t_row in self.transactions_list:
                 if t_row[consts.SMRY_TICKER] == ticker:
@@ -165,7 +156,7 @@ class Dividends:
             if no_of_divs < 1:
                 continue
             freq = divs[-3][consts.DIV_FREQ]
-            cycle_length = payments_per_year(freq)
+            cycle_length = fileprocessor.payments_per_year(freq)
             how_many_to_check = (cycle_length if no_of_divs >= cycle_length else no_of_divs)
             if no_of_divs < 2:
                 how_many_to_check = 0
@@ -202,6 +193,11 @@ class Dividends:
 
         total_row_before = [sum(i) for i in zip(*self.dividends_calendar_before_tax)]
         self.dividends_calendar_before_tax.append(total_row_before)
+        avg_row = [round(v/12) for v in total_row_before]
+        avg_month_now = round(total_row_before[0]/self.now.month)
+        avg_row[0] = f"{avg_row[0]}//{avg_month_now}"
+        self.dividends_calendar_before_tax.append(avg_row)
+
         sigma_row = [0] * len(total_row_before)
         sigma_row[0] = sum(total_row_before)
         sigma_row[2] = "ϕ"
@@ -210,6 +206,11 @@ class Dividends:
 
         total_row_after = [sum(i) for i in zip(*self.dividends_calendar_after_tax)]
         self.dividends_calendar_after_tax.append(total_row_after)
+        avg_row = [round(v / 12) for v in total_row_after]
+        avg_month_now = round(total_row_after[0] / self.now.month)
+        avg_row[0] = f"{avg_row[0]}//{avg_month_now}"
+        self.dividends_calendar_after_tax.append(avg_row)
+
         sigma_row = [0] * len(total_row_after)
         sigma_row[0] = sum(total_row_after)
         sigma_row[2] = "ϕ"
