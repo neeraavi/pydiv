@@ -346,6 +346,9 @@
         <height>791</height>
        </rect>
       </property>
+      <property name="selectionBehavior">
+       <enum>QAbstractItemView::SelectRows</enum>
+      </property>
       <attribute name="verticalHeaderVisible">
        <bool>false</bool>
       </attribute>
@@ -374,19 +377,67 @@
      <attribute name="title">
       <string>Diversification</string>
      </attribute>
-    </widget>
-    <widget class="QWidget" name="tab_4">
-     <attribute name="title">
-      <string>Graphs</string>
-     </attribute>
-     <widget class="MplWidget" name="plot_1" native="true">
+     <widget class="QTableView" name="sectorSummaryView">
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>20</y>
-        <width>1081</width>
-        <height>291</height>
+        <y>10</y>
+        <width>491</width>
+        <height>431</height>
        </rect>
+      </property>
+      <property name="selectionMode">
+       <enum>QAbstractItemView::SingleSelection</enum>
+      </property>
+      <property name="selectionBehavior">
+       <enum>QAbstractItemView::SelectRows</enum>
+      </property>
+     </widget>
+     <widget class="QTableView" name="sectorDetailsView">
+      <property name="geometry">
+       <rect>
+        <x>510</x>
+        <y>0</y>
+        <width>581</width>
+        <height>441</height>
+       </rect>
+      </property>
+      <property name="selectionMode">
+       <enum>QAbstractItemView::SingleSelection</enum>
+      </property>
+      <property name="selectionBehavior">
+       <enum>QAbstractItemView::SelectRows</enum>
+      </property>
+     </widget>
+     <widget class="QLabel" name="image_label">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>450</y>
+        <width>1071</width>
+        <height>361</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Sector</string>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tab">
+     <attribute name="title">
+      <string>Progress</string>
+     </attribute>
+     <widget class="QLabel" name="graph_label">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>1071</width>
+        <height>791</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Graph</string>
       </property>
      </widget>
     </widget>
@@ -404,14 +455,6 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>MplWidget</class>
-   <extends>QWidget</extends>
-   <header>mplwidget.h</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections/>
 </ui>

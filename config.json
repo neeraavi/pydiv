@@ -1,0 +1,8 @@
+{
+  "path_prefix": "./tmp",
+  "out_path_prefix": "./out",
+  "path_prefix_linux": "/home/iyerns/tmp/PycharmProjects/pythonProject/tmp",
+  "main_font": "Ubuntu",
+  "main_font_w": "Segoe UI",
+  "main_font_size": 10
+}

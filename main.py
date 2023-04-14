@@ -1,15 +1,20 @@
 import copy
 from operator import itemgetter
+
+from PyQt5.QtGui import QPixmap
+
 import fileprocessor
 import json
 
 from datetime import datetime
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt, QItemSelectionModel
+from PyQt5.QtCore import Qt, QItemSelectionModel, QProcess
 from PyQt5.QtWidgets import QApplication, QHeaderView, QLabel, QFrame
 import sys
 
 import Dividends
+from SectorDetailsModel import SectorDetailsModel
+from SectorModel import SectorModel
 from SummaryModel import SummaryModel
 from divui import Ui_MainWindow
 import transactions
@@ -86,9 +91,11 @@ class Window(QtWidgets.QMainWindow):
         self.create_status_bar()
         self.fill_summary_table()
         self.display_summary_table()
+        self.display_sector_tables()
         self.set_font()
         self.setFixedSize(self.width(), self.height())
         self.setup_connections()
+        self.start_external_process()
 
     def setup_shortcuts(self):
         # @formatter:off
@@ -144,6 +151,7 @@ class Window(QtWidgets.QMainWindow):
     def fill_summary_table(self):
         self.do_calculations_on_transactions()
         self.do_calculations_on_dividends()
+        self.do_calculations_on_sector()
 
     def do_calculations_on_transactions(self):
         t = transactions.Transactions(self.startYear, self.pathPrefix, self.now)
@@ -347,7 +355,7 @@ class Window(QtWidgets.QMainWindow):
 
         view = self.ui.calendarDetailsView
         indices_to_hide = [6]
-        self.redisplay(view, indices_to_hide)
+        self.redisplay(view, indices_to_hide, len(result))
 
     def redisplay_dividend(self, m, y):
         if m > 12:
@@ -460,18 +468,127 @@ class Window(QtWidgets.QMainWindow):
             # print("Read successful")
         # print(data)
         self.pathPrefix = data["path_prefix"]
+        self.outPathPrefix = data["out_path_prefix"]
         self.mainFont = data["main_font"]
         self.mainFontSize = data["main_font_size"]
 
-    def plot_data(self):
-        self.div_obj.plot_data(self.ui.plot_1.canvas)
+    def do_calculations_on_sector(self):
+        self.sector_map = {}
+        for row in self.summary:
+            status = row[consts.SMRY_STATUS]
+            if '*' in status:
+                continue
+            s = row[consts.SMRY_SECTOR]
+            ticker = row[consts.SMRY_TICKER]
+            inv = row[consts.SMRY_INVESTED]
+            alloc = row[consts.SMRY_ALLOC]
+            annual_contrib_a = row[consts.SMRY_ANN_DIV_A]
+            annual_contrib_b = row[consts.SMRY_ANN_DIV_B]
+            if s not in self.sector_map:
+                self.sector_map[s] = []
+            self.sector_map[s].append([ticker, inv, alloc, annual_contrib_b, annual_contrib_a])
+
+        self.sector_summary = []
+        for sector, items in self.sector_map.items():
+            nos = len(items)
+            inv = sum(row[1] for row in items)
+            alloc = inv / self.totalInvested * 100
+            # alloc = "{m:0.2f}".format(m=alloc)
+            # alloc = "{m:0.0f} %".format(m=alloc)
+            self.sector_summary.append([sector, round(inv), alloc, nos])
+        self.sector_summary = sorted(self.sector_summary, key=itemgetter(2))
+
+        fname = f'{self.outPathPrefix}/sector_details.log'
+        with open(fname, "w") as f:
+            for item in self.sector_summary:
+                print(item[0], ',', item[2], file=f)
+
+        inv_total = sum(row[1] for row in self.sector_summary)
+        nos_total = sum(row[3] for row in self.sector_summary)
+        self.sector_summary.append(['Total', inv_total, 100, nos_total])
+
+        ## print(row)
+
+    def display_sector_tables(self):
+        header = ['Sector', 'Invested', 'Allocation', '#', '5']
+        self.sector_summary_model = SectorModel(self.sector_summary, header, [])
+        view = self.ui.sectorSummaryView
+        view.setModel(self.sector_summary_model)
+        view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        for i in range(len(self.sector_summary)):
+            view.setRowHeight(i, 20)
+        #    for i in range(9):
+        #        view.setColumnWidth(i, 60)
+        #    view.setColumnWidth(0, 100)
+        #    view.setColumnWidth(2, 80)
+        #    view.horizontalHeader().setSectionResizeMode(consts.DIV_BEFORE, QHeaderView.Stretch)
+        view.show()
+        view.selectionModel().selectionChanged.connect(self.sector_summary_selection_changed)
+        view.setCurrentIndex(view.model().index(0, 0))
+
+    def sector_summary_selection_changed(self, selected):
+        for idx in selected.indexes():
+            selected_row = idx.row()
+        sector = self.sector_summary[selected_row][0]
+        if sector not in self.sector_map:
+            return
+        # print(ticker)
+        result = self.sector_map[sector]
+        result = sorted(result, key=itemgetter(0))
+
+        inv_total = sum(row[1] for row in result)
+        total_ann_contrib_b = sum(row[3] for row in result)
+        total_ann_contrib_a = sum(row[4] for row in result)
+        sector_inv = inv_total / self.totalInvested * 100
+        result.append(['Total', inv_total, sector_inv, total_ann_contrib_b, total_ann_contrib_a])
+
+        # print(result)
+        view = self.ui.sectorDetailsView
+        header = ['Ticker', 'Inv', 'Alloc', 'annual_contrib_b', 'annual_contrib_a', '99']
+        sector_summary_details_model = SectorDetailsModel(result, header, [])
+        view.setModel(sector_summary_details_model)
+        view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        for i in range(len(self.sector_summary)):
+            view.setRowHeight(i, 20)
+        #    for i in range(9):
+        #        view.setColumnWidth(i, 60)
+        #    view.setColumnWidth(0, 100)
+        #    view.setColumnWidth(2, 80)
+        #    view.horizontalHeader().setSectionResizeMode(consts.DIV_BEFORE, QHeaderView.Stretch)
+        view.show()
+        # view.selectionModel().selectionChanged.connect(self.sector_summary_selection_changed)
+
+        # result = sorted(result, key=itemgetter(2))
+        # header = ["Ticker", "B/S", "Date", "#", "Cost", "CPS", "Sign", "z"]
+        # self.calendarDetailsModel = CalendarDetailsModel(result, header, [])
+        # self.ui.calendarDetailsMode.setText(f"Investments in {ym}")
+
+        # view = self.ui.calendarDetailsView
+        # indices_to_hide = [6]
+        # self.redisplay(view, indices_to_hide, len(result))
+
+    def start_external_process(self):
+        self.p = QProcess()
+        self.p.finished.connect(self.process_finished)
+        self.p.start("python3", ['graphs.py'])
+
+    def process_finished(self):
+        pixmap = QPixmap('out/sector_details.png')
+        # pixmap = pixmap.scaledToHeight(360)
+        # pixmap = pixmap.scaled(1070, 360, QtCore.Qt.KeepAspectRatio)
+        self.ui.image_label.setPixmap(pixmap)
+        pixmap2 = QPixmap('out/div_details.png')
+        self.ui.graph_label.setPixmap(pixmap2)
+        pass
+        self.p = None
 
 
 def create_app():
     app = QApplication(sys.argv)
     win = Window()
     win.show()
-    win.plot_data()
     win.ui.summaryView.setFocus()
     index = win.ui.dividendCalendarView.model().index(0, 0)
     win.ui.dividendCalendarView.selectionModel().select(index, QItemSelectionModel.Select)

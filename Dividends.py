@@ -2,8 +2,6 @@ import calendar
 import fileprocessor
 import columnNames as consts
 
-import numpy as np
-
 
 def transpose_matrix(matrix):
     return [[row[col] for row in matrix] for col, _ in enumerate(matrix[0])]
@@ -224,36 +222,13 @@ class Dividends:
         self.dividends_calendar_after_tax.append(sigma_row)
         # print(total_row)
 
-    def plot_data(self, canvas):
-        months = [calendar.month_abbr[i] for i in range(1, 13)]
-        chart = {}
-        a = self.dividends_calendar_before_tax[0:12]
-        # a = np.transpose(a)
-        a = transpose_matrix(a)
+        fname=f'out/dividend_details.log'
+        with open(fname, "w") as f:
+            for r in self.dividends_calendar_before_tax[0:12]:
+                print(', '.join(str(e) for e in r), file=f)
 
-        for count, divs in enumerate(a):
-            chart[self.dividend_calendar_header[count]] = divs
-            # print(divs)
 
-        x = np.arange(len(months))  # the label locations
-        width = 0.1  # the width of the bars
-        multiplier = 0
 
-        ax = canvas.ax
-        ax.grid(visible=True)
-        for attribute, measurement in chart.items():
-            offset = width * multiplier
-            ax.bar(x + offset, measurement, width, label=attribute)
-            # ax.bar_label(rects, padding=3)
-            multiplier += 1
-
-        # Add some text for labels, title and custom x-axis tick labels, etc.
-        ax.set_ylabel('Dividend')
-        ax.set_title('Monthly divided')
-        ax.set_xticks(x + width, months)
-        ax.legend(bbox_to_anchor=(1.07, 0), loc='lower center')
-        ax.set_ylim(0, 2500)
-        canvas.draw()
 
     def update_summary_table_with_div_contrib_from_each_ticker(self):
         factor = 100 / self.total_annual_div_a
