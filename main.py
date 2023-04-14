@@ -223,7 +223,7 @@ class Window(QtWidgets.QMainWindow):
         self.ui.status_bar = self.statusBar()
         font = QtGui.QFont()
         font.setFamily(self.mainFont)
-        font.setPointSize(9)
+        font.setPointSize(10)
         colors = ['lightskyblue', 'lightskyblue',
                   'bisque', 'bisque', 'bisque',
                   '#dde5b6', '#dde5b6', '#dde5b6', 'yellowgreen']
@@ -275,10 +275,10 @@ class Window(QtWidgets.QMainWindow):
             [consts.LBL_INVESTED                    , f"Invested:  {self.totalInvested}"]                              ,
             [consts.LBL_FwdAnnDivA_before_deduction , "FwdAnnDivA: {m:0.0f}".format(m=self.annual_div_a)]              ,
             [consts.LBL_FwdAnnDivA_after_deduction  , "FwdAnnDivA: {m:0.0f}".format(m=annual_div_after_deduction_claim)],
-            [consts.LBL_YoC_A                       , "YoC_A: {m:0.2f}%".format(m=yoc_a)]                              ,
+            [consts.LBL_YoC_A                       , "YoC_A:   {m:0.2f}%".format(m=yoc_a)]                              ,
             [consts.LBL_FwdAnnDivA_M                , "FwdAnnDivA_M: {m:0.0f}".format(m=fwd_a_m)]                      ,
             [consts.LBL_FwdAnnDivB                  , "FwdAnnDivB: {m:0.0f}".format(m=self.annual_div_b)]              ,
-            [consts.LBL_YoC_B                       , "YoC_B: {m:0.2f}%".format(m=yoc_b)]                              ,
+            [consts.LBL_YoC_B                       , "YoC_B:   {m:0.2f}%".format(m=yoc_b)]                              ,
             [consts.LBL_FwdAnnDivB_M                , "FwdAnnDivB_M: {m:0.0f}".format(m=self.annual_div_b / 12)]
         ]
         # @formatter:on
@@ -457,21 +457,24 @@ class Window(QtWidgets.QMainWindow):
     def parse_config(self):
         with open("config.json", "r") as config:
             data = json.load(config)
-            print("Read successful")
-        print(data)
+            # print("Read successful")
+        # print(data)
         self.pathPrefix = data["path_prefix"]
         self.mainFont = data["main_font"]
         self.mainFontSize = data["main_font_size"]
+
+    def plot_data(self):
+        self.div_obj.plot_data(self.ui.plot_1.canvas)
 
 
 def create_app():
     app = QApplication(sys.argv)
     win = Window()
     win.show()
+    win.plot_data()
     win.ui.summaryView.setFocus()
     index = win.ui.dividendCalendarView.model().index(0, 0)
     win.ui.dividendCalendarView.selectionModel().select(index, QItemSelectionModel.Select)
-
     sys.exit(app.exec_())
 
 

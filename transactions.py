@@ -56,7 +56,7 @@ class Transactions:
                     cost = row[4]
                     op_sign = row[6]
                     self.investmentCalendarMap[ym] = (
-                        self.investmentCalendarMap[ym] + op_sign * cost
+                            self.investmentCalendarMap[ym] + op_sign * cost
                     )
             self.transactions.append([ticker, nos, round(inv)])
             cps = "{:.2f}".format(inv / nos) if nos != 0 else " "
@@ -94,7 +94,7 @@ class Transactions:
         sigma_row[2] = "ϕ"
         sigma_row[3] = round(sigma_row[0] / self.numOfYears)
         self.investmentCalendar.append(sigma_row)
-        print(total_row)
+        # print(total_row)
 
     def process_names(self):
         f = self.prefix + "/names.txt"

@@ -96,7 +96,7 @@
        <rect>
         <x>10</x>
         <y>440</y>
-        <width>441</width>
+        <width>451</width>
         <height>371</height>
        </rect>
       </property>
@@ -128,9 +128,9 @@
      <widget class="QTableView" name="dividendsView">
       <property name="geometry">
        <rect>
-        <x>460</x>
+        <x>470</x>
         <y>440</y>
-        <width>631</width>
+        <width>621</width>
         <height>371</height>
        </rect>
       </property>
@@ -374,33 +374,18 @@
      <attribute name="title">
       <string>Diversification</string>
      </attribute>
-     <widget class="QListView" name="listView">
+    </widget>
+    <widget class="QWidget" name="tab_4">
+     <attribute name="title">
+      <string>Graphs</string>
+     </attribute>
+     <widget class="MplWidget" name="plot_1" native="true">
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>10</y>
-        <width>451</width>
-        <height>301</height>
-       </rect>
-      </property>
-     </widget>
-     <widget class="QGraphicsView" name="graphicsView">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>320</y>
-        <width>1071</width>
-        <height>221</height>
-       </rect>
-      </property>
-     </widget>
-     <widget class="QGraphicsView" name="graphicsView_2">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>550</y>
-        <width>1071</width>
-        <height>221</height>
+        <y>20</y>
+        <width>1081</width>
+        <height>291</height>
        </rect>
       </property>
      </widget>
@@ -419,6 +404,14 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>MplWidget</class>
+   <extends>QWidget</extends>
+   <header>mplwidget.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

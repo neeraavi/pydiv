@@ -2,6 +2,12 @@ import calendar
 import fileprocessor
 import columnNames as consts
 
+import numpy as np
+
+
+def transpose_matrix(matrix):
+    return [[row[col] for row in matrix] for col, _ in enumerate(matrix[0])]
+
 
 class Dividends:
     def __init__(self, start_year, prefix, transactions_list, total_investment, current_date):
@@ -31,7 +37,7 @@ class Dividends:
     def init_dividends_calendar(self):
         self.dividend_calendar_header = [x for x in range(self.now.year, self.startYear - 1, -1)]
         self.month_names = list(calendar.month_name)[1:13]
-        self.month_names.extend(["Total", "Avg.","Σ"])
+        self.month_names.extend(["Total", "Avg.", "Σ"])
 
         for y in range(self.startYear, self.now.year + 1):
             for m in range(1, 13):
@@ -193,8 +199,8 @@ class Dividends:
 
         total_row_before = [sum(i) for i in zip(*self.dividends_calendar_before_tax)]
         self.dividends_calendar_before_tax.append(total_row_before)
-        avg_row = [round(v/12) for v in total_row_before]
-        avg_month_now = round(total_row_before[0]/self.now.month)
+        avg_row = [round(v / 12) for v in total_row_before]
+        avg_month_now = round(total_row_before[0] / self.now.month)
         avg_row[0] = f"{avg_row[0]}//{avg_month_now}"
         self.dividends_calendar_before_tax.append(avg_row)
 
@@ -217,6 +223,37 @@ class Dividends:
         sigma_row[3] = round(sigma_row[0] / self.numOfYears)
         self.dividends_calendar_after_tax.append(sigma_row)
         # print(total_row)
+
+    def plot_data(self, canvas):
+        months = [calendar.month_abbr[i] for i in range(1, 13)]
+        chart = {}
+        a = self.dividends_calendar_before_tax[0:12]
+        # a = np.transpose(a)
+        a = transpose_matrix(a)
+
+        for count, divs in enumerate(a):
+            chart[self.dividend_calendar_header[count]] = divs
+            # print(divs)
+
+        x = np.arange(len(months))  # the label locations
+        width = 0.1  # the width of the bars
+        multiplier = 0
+
+        ax = canvas.ax
+        ax.grid(visible=True)
+        for attribute, measurement in chart.items():
+            offset = width * multiplier
+            ax.bar(x + offset, measurement, width, label=attribute)
+            # ax.bar_label(rects, padding=3)
+            multiplier += 1
+
+        # Add some text for labels, title and custom x-axis tick labels, etc.
+        ax.set_ylabel('Dividend')
+        ax.set_title('Monthly divided')
+        ax.set_xticks(x + width, months)
+        ax.legend(bbox_to_anchor=(1.07, 0), loc='lower center')
+        ax.set_ylim(0, 2500)
+        canvas.draw()
 
     def update_summary_table_with_div_contrib_from_each_ticker(self):
         factor = 100 / self.total_annual_div_a
