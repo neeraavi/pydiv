@@ -1,6 +1,6 @@
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import Qt
-import columnNames as consts
+import Constants as consts
 
 
 class SummaryModel(QtCore.QAbstractTableModel):
@@ -18,9 +18,9 @@ class SummaryModel(QtCore.QAbstractTableModel):
         if role == Qt.BackgroundRole:
             if col == consts.SMRY_ALLOC:
                 return QtGui.QColor(consts.ALLOC_COLOR)
-            if col == consts.SMRY_ANN_DIV_A or col == consts.SMRY_YOC_A:
+            elif col == consts.SMRY_ANN_DIV_A or col == consts.SMRY_YOC_A:
                 return QtGui.QColor(consts.AFTER_TAX_COLOR)
-            if col == consts.SMRY_ANN_DIV_B or col == consts.SMRY_YOC_B:
+            elif col == consts.SMRY_ANN_DIV_B or col == consts.SMRY_YOC_B:
                 return QtGui.QColor(consts.BEFORE_TAX_COLOR)
             if col == 1:
                 div_change = d[1]
@@ -37,19 +37,17 @@ class SummaryModel(QtCore.QAbstractTableModel):
             if "*" in str(d[1]):
                 return QtGui.QColor(consts.CLOSED_POS_COLOR)
         if role == Qt.TextAlignmentRole:
-            colNum = index.column()
-            if colNum == 1:
+            if col == 1:
                 return Qt.AlignCenter | Qt.AlignVCenter
-            return (
-                Qt.AlignLeft | Qt.AlignVCenter
-                if (colNum < 2 or colNum > 9)
-                else Qt.AlignRight | Qt.AlignVCenter
-            )
+            return Qt.AlignLeft | Qt.AlignVCenter if (col < 2 or col > 9) else Qt.AlignRight | Qt.AlignVCenter
         if role != Qt.ItemDataRole.DisplayRole:
             # for all roles you're not interested in return python's None
             # which is interpreted as an invalid QVariant value
             return None
-        return self._data[index.row()][index.column()]
+        da = d[col]
+        if isinstance(da, float):
+            return "{:.2f}".format(da)
+        return da
 
     def rowCount(self, index):
         # The length of the outer list.

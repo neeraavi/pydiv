@@ -1,7 +1,7 @@
 from TransactionModel import TransactionModel
 from PyQt5 import QtGui
 from PyQt5.QtCore import Qt
-import columnNames as consts
+import Constants as consts
 
 
 class DividendCalendarModel(TransactionModel):
@@ -17,7 +17,7 @@ class DividendCalendarModel(TransactionModel):
         if role == Qt.BackgroundRole:
             if row == 12:
                 return QtGui.QColor(consts.TOTAL_COLOR)
-            if row == 13:
+            elif row == 13:
                 return QtGui.QColor(consts.NEXT_COLOR)
         if role == Qt.ForegroundRole:
             if "*" in str(d[1]):
@@ -28,5 +28,4 @@ class DividendCalendarModel(TransactionModel):
             # for all roles you're not interested in return python's None
             # which is interpreted as an invalid QVariant value
             return None
-        col = index.column()
-        return self._data[index.row()][index.column()]
+        return d[col]

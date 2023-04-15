@@ -1,28 +1,26 @@
 import copy
+import json
+import sys
+from datetime import datetime
 from operator import itemgetter
 
-from PyQt5.QtGui import QPixmap
-
-import fileprocessor
-import json
-
-from datetime import datetime
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt, QItemSelectionModel, QProcess
-from PyQt5.QtWidgets import QApplication, QHeaderView, QLabel, QFrame
-import sys
+from PyQt5.QtCore import QItemSelectionModel, QProcess, Qt
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QApplication, QFrame, QHeaderView, QLabel
 
+import Constants as consts
 import Dividends
+import fileprocessor
+import transactions
+from CalendarDetailsModel import CalendarDetailsModel
+from CalendarModel import CalendarModel
+from DividendModel import DividendModel
+from divui import Ui_MainWindow
 from SectorDetailsModel import SectorDetailsModel
 from SectorModel import SectorModel
 from SummaryModel import SummaryModel
-from divui import Ui_MainWindow
-import transactions
 from TransactionModel import TransactionModel
-from CalendarModel import CalendarModel
-from CalendarDetailsModel import CalendarDetailsModel
-from DividendModel import DividendModel
-import columnNames as consts
 
 
 def get_last_1_2_6_12_ym(y, m):
@@ -41,9 +39,10 @@ def get_last_1_2_6_12_ym(y, m):
 
 
 def resize_columns_for_details_view(view, cols):
-    view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+    hh = view.horizontalHeader()
+    hh.setSectionResizeMode(QHeaderView.ResizeToContents)
     for col in cols:
-        view.horizontalHeader().setSectionResizeMode(col, QHeaderView.Stretch)
+        hh.setSectionResizeMode(col, QHeaderView.Stretch)
     view.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
     view.scrollToBottom()
     view.show()
@@ -51,8 +50,9 @@ def resize_columns_for_details_view(view, cols):
 
 def resize_columns_for_calendar_view(view):
     view.horizontalHeader().setStretchLastSection(True)
-    view.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-    view.verticalHeader().setStretchLastSection(False)
+    vh = view.verticalHeader()
+    vh.setSectionResizeMode(QHeaderView.ResizeToContents)
+    vh.setStretchLastSection(False)
     for i in range(9):  # last nine years - fixed column width
         view.setColumnWidth(i, 50)
     view.setColumnWidth(0, 80)
@@ -63,10 +63,7 @@ class Window(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         super(Window, self).__init__(parent)
         self.div_obj = None
-        self.dividendCalendarModel = None
-        self.investmentCalendarModel = None
         self._label_ = []
-        self.dividendSourceModel = None
         self.calendarDetailsModel = None
         self._tickers_active_only = None
         self._tickers_all = None
@@ -78,11 +75,10 @@ class Window(QtWidgets.QMainWindow):
         self.totalInvested = 0
         self.summary = None
         self.transactionMap = {}
-        self.transactionsProxyModel = None
-        self.transactionsSourceModel = None
-
-        self.sourceModel = None
+        self.transactions_header = ["Ticker", "B/S", "Date", "#", "Cost", "CPS", "Sign"]
+        self.sector_header = ['Ticker', 'Inv', 'Alloc', 'annual_contrib_b', 'annual_contrib_a']
         self.proxyModel = None
+
         self.parse_config()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -126,8 +122,8 @@ class Window(QtWidgets.QMainWindow):
 
     def update_on_closed_positions_changed(self):
         (self.selected_summary, self.visible_tickers) = self.select_summary_based_on_show_closed_positions()
-        self.sourceModel = SummaryModel(self.selected_summary, self.summaryHeader)
-        self.proxyModel.setSourceModel(self.sourceModel)
+        source_model = SummaryModel(self.selected_summary, self.summaryHeader)
+        self.proxyModel.setSourceModel(source_model)
 
     def select_summary_based_on_show_closed_positions(self):
         show_closed_pos = self.ui.showClosedPositions.isChecked()
@@ -140,8 +136,6 @@ class Window(QtWidgets.QMainWindow):
         self.proxyModel.setFilterKeyColumn(cols)
 
     def setup_connections(self):
-        # self.ui.summaryView.setStyleSheet("alternate-background-color: #fefae0; background-color: white;")
-        # self.ui.summaryView.setStyleSheet("""QTableView {  gridline-color: seashell;}""")
         self.ui.mainFilter.returnPressed.connect(lambda: self.ui.summaryView.setFocus())
         self.ui.showClosedPositions.stateChanged.connect(self.update_on_closed_positions_changed)
         self.ui.searchAllColumns.stateChanged.connect(self.search_all_columns_changed)
@@ -154,7 +148,7 @@ class Window(QtWidgets.QMainWindow):
         self.do_calculations_on_sector()
 
     def do_calculations_on_transactions(self):
-        t = transactions.Transactions(self.startYear, self.pathPrefix, self.now)
+        t = transactions.Transactions(self.startYear, self.pathPrefix, self.now, self.outPathPrefix)
         self.update_transaction_calendar(t)
         (self.summary, self.transactionMap, self.totalInvested, self.summaryHeader) = t.get_transaction_results()
         self.summary_active_positions_only = [x for x in self.summary if x[consts.SMRY_STATUS] != "*"]
@@ -187,10 +181,11 @@ class Window(QtWidgets.QMainWindow):
         view.setCurrentIndex(view.model().index(0, 0))
 
     def reset_main_filter(self):
-        if self.ui.mainFilter.hasFocus():
-            self.ui.mainFilter.setText("")
+        m_filter = self.ui.mainFilter
+        if m_filter.hasFocus():
+            m_filter.setText("")
         else:
-            self.ui.mainFilter.setFocus()
+            m_filter.setFocus()
 
     def ticker_filter_changed(self, new_filter):
         self.proxyModel.setFilterFixedString(new_filter)
@@ -210,9 +205,9 @@ class Window(QtWidgets.QMainWindow):
 
     def display_filtered_transactions(self, ticker):
         filtered = self.transactionMap[ticker]
-        self.transactionsSourceModel = TransactionModel(filtered, ["Ticker", "B/S", "Date", "#", "Cost", "CPS", "Sign"])
+        transactions_source_model = TransactionModel(filtered, self.transactions_header)
         view = self.ui.transactionsView
-        view.setModel(self.transactionsSourceModel)
+        view.setModel(transactions_source_model)
         view.setColumnHidden(6, True)
         resize_columns_for_details_view(view, range(4, 7))
 
@@ -222,9 +217,9 @@ class Window(QtWidgets.QMainWindow):
             return
 
         filtered = self.dividendMap[ticker]
-        self.dividendSourceModel = DividendModel(filtered, self.dividendHeader)
+        dividend_source_model = DividendModel(filtered, self.dividendHeader)
         view = self.ui.dividendsView
-        view.setModel(self.dividendSourceModel)
+        view.setModel(dividend_source_model)
         resize_columns_for_details_view(
             view, [consts.DIV_DPS, consts.DIV_BEFORE, consts.DIV_AFTER, consts.DIV_WHERE])
 
@@ -251,8 +246,6 @@ class Window(QtWidgets.QMainWindow):
 
     def set_font(self):
         font = QtGui.QFont()
-        # font.setFamily("Ubuntu")
-        # font.setFamily("FiraCode")
         font.setFamily(self.mainFont)
         font.setPointSize(self.mainFontSize)
 
@@ -281,7 +274,7 @@ class Window(QtWidgets.QMainWindow):
         # @formatter:off
         items = [
             [consts.LBL_ACTIVE                      , f"Active#  {len(self.summary_active_positions_only)}"]           ,
-            [consts.LBL_INVESTED                    , f"Invested:  {self.totalInvested}"]                              ,
+            [consts.LBL_INVESTED                    , f"Invested:  {round(self.totalInvested)}"]                              ,
             [consts.LBL_FwdAnnDivA_before_deduction , "FwdAnnDivA: {m:0.0f}".format(m=self.annual_div_a)]              ,
             [consts.LBL_FwdAnnDivA_after_deduction  , "FwdAnnDivA: {m:0.0f}".format(m=annual_div_after_deduction_claim)],
             [consts.LBL_YoC_A                       , "YoC_A:   {m:0.2f}%".format(m=yoc_a)]                              ,
@@ -295,70 +288,57 @@ class Window(QtWidgets.QMainWindow):
             self._label_[row[0]].setText(row[1])
 
     def update_transaction_calendar(self, t):
-        (self.investmentCalendar, investment_calendar_header, month_header) = t.get_investment_calendar()
-        self.investmentCalendarModel = CalendarModel(self.investmentCalendar, investment_calendar_header, month_header)
-
+        (investment_calendar, investment_calendar_header, month_header) = t.get_investment_calendar()
+        investment_calendar_model = CalendarModel(investment_calendar, investment_calendar_header, month_header)
         proxy_model = QtCore.QSortFilterProxyModel(self)
-        proxy_model.setSourceModel(self.investmentCalendarModel)
+        proxy_model.setSourceModel(investment_calendar_model)
         view = self.ui.investmentCalendarView
         view.setModel(proxy_model)
         view.selectionModel().selectionChanged.connect(self.inv_cal_selection_changed)
-
         resize_columns_for_calendar_view(view)
-        view.clicked.connect(self.investment_calendar_clicked)
+        view.clicked.connect(self.redisplay_investment)
 
     def update_dividend_calendar(self, d):
-        if self.ui.beforeTax.isChecked():
-            (dividends_calendar, dividend_calendar_header, month_header) = d.get_dividend_calendar_before_tax()
-        else:
-            (dividends_calendar, dividend_calendar_header, month_header) = d.get_dividend_calendar_after_tax()
-
+        result = d.get_dividend_calendar_before_tax() if self.ui.beforeTax.isChecked() else d.get_dividend_calendar_after_tax()
+        (dividends_calendar, dividend_calendar_header, month_header) = result
         dividends_calendar = [['' if x == 0 else x for x in l] for l in dividends_calendar]
-        self.dividendCalendarModel = CalendarModel(dividends_calendar, dividend_calendar_header, month_header)
 
+        dividend_calendar_model = CalendarModel(dividends_calendar, dividend_calendar_header, month_header)
         proxy_model = QtCore.QSortFilterProxyModel(self)
-        proxy_model.setSourceModel(self.dividendCalendarModel)
+        proxy_model.setSourceModel(dividend_calendar_model)
         view = self.ui.dividendCalendarView
         view.setModel(proxy_model)
         view.selectionModel().selectionChanged.connect(self.div_cal_selection_changed)
-
         resize_columns_for_calendar_view(view)
-        view.clicked.connect(self.dividend_calendar_clicked)
+        view.clicked.connect(self.redisplay_dividend)
+
+    def get_m_y_from_index(self, idx):
+        m = idx.row() + 1
+        y = self.now.year - idx.column()
+        return m, y
 
     def inv_cal_selection_changed(self, selected):
         for idx in selected.indexes():
-            self.redisplay_investment(idx.row() + 1, self.now.year - idx.column())
-
-    def investment_calendar_clicked(self, item):
-        m = 1 + item.row()
-        y = self.now.year - item.column()
-        self.redisplay_investment(m, y)
+            self.redisplay_investment(idx)
 
     def div_cal_selection_changed(self, selected):
         for idx in selected.indexes():
-            self.redisplay_dividend(idx.row() + 1, self.now.year - idx.column())
+            self.redisplay_dividend(idx)
 
-    def dividend_calendar_clicked(self, item):
-        m = 1 + item.row()
-        y = self.now.year - item.column()
-        self.redisplay_dividend(m, y)
-
-    def redisplay_investment(self, m, y):
+    def redisplay_investment(self, idx):
+        (m, y) = self.get_m_y_from_index(idx)
         if m > 12:
             return
-
         ym = "{y}-{m:02d}".format(m=m, y=y)
         result = [row for ticker, items in self.transactionMap.items() for row in items if ym in row[2]]
         result = sorted(result, key=itemgetter(2))
-        header = ["Ticker", "B/S", "Date", "#", "Cost", "CPS", "Sign", "z"]
-        self.calendarDetailsModel = CalendarDetailsModel(result, header, [])
+        self.calendarDetailsModel = CalendarDetailsModel(result, self.transactions_header, [])
         self.ui.calendarDetailsMode.setText(f"Investments in {ym}")
-
-        view = self.ui.calendarDetailsView
         indices_to_hide = [6]
-        self.redisplay(view, indices_to_hide, len(result))
+        self.redisplay(self.ui.calendarDetailsView, indices_to_hide, len(result))
 
-    def redisplay_dividend(self, m, y):
+    def redisplay_dividend(self, idx):
+        (m, y) = self.get_m_y_from_index(idx)
         if m > 12:
             return
 
@@ -369,8 +349,8 @@ class Window(QtWidgets.QMainWindow):
         current_tickers = set([r[0] for r in result])
         div_a = 0
         div_b = 0
-        for r in result:
-            r[consts.DIV_DPS] = "{m:0.2f}".format(m=r[consts.DIV_DPS])
+        # for r in result:
+        #    r[consts.DIV_DPS] = "{m:0.2f}".format(m=r[consts.DIV_DPS])
         if len(result) > 0:
             blist, alist = zip(*[((row[consts.DIV_BEFORE]), (row[consts.DIV_AFTER])) for row in result])
             div_b = sum(blist)
@@ -422,10 +402,14 @@ class Window(QtWidgets.QMainWindow):
 
             e_divs = sorted(e_divs, key=itemgetter(consts.DIV_TICKER))
             if len(e_divs) > 0:
-                for r in e_divs:
-                    r[consts.DIV_DPS] = "{m:0.2f}".format(m=r[consts.DIV_DPS])
-                div_e_b = sum(row[consts.DIV_BEFORE] for row in e_divs)
-                div_e_a = sum(row[consts.DIV_AFTER] for row in e_divs)
+                # for r in e_divs:
+                #    r[consts.DIV_DPS] = "{m:0.2f}".format(m=r[consts.DIV_DPS])
+                # div_e_b = sum(row[consts.DIV_BEFORE] for row in e_divs)
+                # div_e_a = sum(row[consts.DIV_AFTER] for row in e_divs)
+                b_list, a_list = zip(*[((row[consts.DIV_BEFORE]), (row[consts.DIV_AFTER])) for row in e_divs])
+                div_e_b = sum(b_list)
+                div_e_a = sum(a_list)
+
                 nos = len(e_divs)
                 row = ['Expected', nos, '', '', '', round(div_e_b), '', round(div_e_a), '', '', '']
                 e_divs.append(row)
@@ -447,8 +431,6 @@ class Window(QtWidgets.QMainWindow):
         if row_count > 0:
             for col in indices_to_hide:
                 view.setColumnHidden(col, True)
-            # view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-            # view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
             for i in range(9):
                 view.setColumnWidth(i, 60)
             view.setColumnWidth(0, 100)
@@ -467,12 +449,12 @@ class Window(QtWidgets.QMainWindow):
     def parse_config(self):
         with open("config.json", "r") as config:
             data = json.load(config)
-            # print("Read successful")
-        # print(data)
-        self.pathPrefix = data["path_prefix"]
+        # @formatter:off
+        self.pathPrefix    = data["path_prefix"]
         self.outPathPrefix = data["out_path_prefix"]
-        self.mainFont = data["main_font"]
-        self.mainFontSize = data["main_font_size"]
+        self.mainFont      = data["main_font"]
+        self.mainFontSize  = data["main_font_size"]
+        # @formatter:on
 
     def do_calculations_on_sector(self):
         self.sector_map = {}
@@ -495,36 +477,29 @@ class Window(QtWidgets.QMainWindow):
             nos = len(items)
             inv = sum(row[1] for row in items)
             alloc = inv / self.totalInvested * 100
-            # alloc = "{m:0.2f}".format(m=alloc)
-            # alloc = "{m:0.0f} %".format(m=alloc)
             self.sector_summary.append([sector, round(inv), alloc, nos])
         self.sector_summary = sorted(self.sector_summary, key=itemgetter(2))
 
-        fname = f'{self.outPathPrefix}/sector_details.log'
-        with open(fname, "w") as f:
+        file_name = f'{self.outPathPrefix}/sector_details.log'
+        with open(file_name, "w") as f:
             for item in self.sector_summary:
                 print(item[0], ',', item[2], file=f)
 
-        inv_total = sum(row[1] for row in self.sector_summary)
-        nos_total = sum(row[3] for row in self.sector_summary)
-        self.sector_summary.append(['Total', inv_total, 100, nos_total])
+        inv_list, nos_list = zip(*[((row[1]), (row[3])) for row in self.sector_summary])
+        inv_total = sum(inv_list)
+        nos_total = sum(nos_list)
 
-        ## print(row)
+        self.sector_summary.append(['Total', inv_total, 100, nos_total])
 
     def display_sector_tables(self):
         header = ['Sector', 'Invested', 'Allocation', '#', '5']
-        self.sector_summary_model = SectorModel(self.sector_summary, header, [])
+        sector_summary_model = SectorModel(self.sector_summary, header, [])
         view = self.ui.sectorSummaryView
-        view.setModel(self.sector_summary_model)
+        view.setModel(sector_summary_model)
         view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         for i in range(len(self.sector_summary)):
             view.setRowHeight(i, 20)
-        #    for i in range(9):
-        #        view.setColumnWidth(i, 60)
-        #    view.setColumnWidth(0, 100)
-        #    view.setColumnWidth(2, 80)
-        #    view.horizontalHeader().setSectionResizeMode(consts.DIV_BEFORE, QHeaderView.Stretch)
         view.show()
         view.selectionModel().selectionChanged.connect(self.sector_summary_selection_changed)
         view.setCurrentIndex(view.model().index(0, 0))
@@ -539,37 +514,22 @@ class Window(QtWidgets.QMainWindow):
         result = self.sector_map[sector]
         result = sorted(result, key=itemgetter(0))
 
-        inv_total = sum(row[1] for row in result)
-        total_ann_contrib_b = sum(row[3] for row in result)
-        total_ann_contrib_a = sum(row[4] for row in result)
+        inv_list, b_list, a_list = zip(*[(row[1], row[3], row[4]) for row in result])
+        inv_total = sum(inv_list)
+        total_ann_contrib_b = sum(b_list)
+        total_ann_contrib_a = sum(a_list)
+
         sector_inv = inv_total / self.totalInvested * 100
         result.append(['Total', inv_total, sector_inv, total_ann_contrib_b, total_ann_contrib_a])
 
-        # print(result)
         view = self.ui.sectorDetailsView
-        header = ['Ticker', 'Inv', 'Alloc', 'annual_contrib_b', 'annual_contrib_a', '99']
-        sector_summary_details_model = SectorDetailsModel(result, header, [])
+        sector_summary_details_model = SectorDetailsModel(result, self.sector_header, [])
         view.setModel(sector_summary_details_model)
         view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         for i in range(len(self.sector_summary)):
             view.setRowHeight(i, 20)
-        #    for i in range(9):
-        #        view.setColumnWidth(i, 60)
-        #    view.setColumnWidth(0, 100)
-        #    view.setColumnWidth(2, 80)
-        #    view.horizontalHeader().setSectionResizeMode(consts.DIV_BEFORE, QHeaderView.Stretch)
         view.show()
-        # view.selectionModel().selectionChanged.connect(self.sector_summary_selection_changed)
-
-        # result = sorted(result, key=itemgetter(2))
-        # header = ["Ticker", "B/S", "Date", "#", "Cost", "CPS", "Sign", "z"]
-        # self.calendarDetailsModel = CalendarDetailsModel(result, header, [])
-        # self.ui.calendarDetailsMode.setText(f"Investments in {ym}")
-
-        # view = self.ui.calendarDetailsView
-        # indices_to_hide = [6]
-        # self.redisplay(view, indices_to_hide, len(result))
 
     def start_external_process(self):
         self.p = QProcess()
@@ -578,12 +538,9 @@ class Window(QtWidgets.QMainWindow):
 
     def process_finished(self):
         pixmap = QPixmap(f'{self.outPathPrefix}/sector_details.png')
-        # pixmap = pixmap.scaledToHeight(360)
-        # pixmap = pixmap.scaled(1070, 360, QtCore.Qt.KeepAspectRatio)
         self.ui.image_label.setPixmap(pixmap)
         pixmap2 = QPixmap(f'{self.outPathPrefix}/div_details.png')
         self.ui.graph_label.setPixmap(pixmap2)
-        pass
         self.p = None
 
 

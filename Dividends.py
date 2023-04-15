@@ -1,6 +1,6 @@
 import calendar
 import fileprocessor
-import columnNames as consts
+import Constants as consts
 
 
 def transpose_matrix(matrix):
@@ -114,17 +114,22 @@ class Dividends:
 
                     next_before = last_effective_dps * nos
                     next_after = next_before * self.tax_factor
-                    yoc_a = yoc_b = "0.00%"
+                    # yoc_a = yoc_b = "0.00%"
+                    yoc_a = yoc_b = 0
 
                     if nos > 0:
                         factor = 100 * num_of_div_payments_per_year / invested
-                        yoc_b = "{:.2f}%".format(next_before * factor)
-                        yoc_a = "{:.2f}%".format(next_after * factor)
+                        # yoc_b = "{:.2f}%".format(next_before * factor)
+                        # yoc_a = "{:.2f}%".format(next_after * factor)
+                        yoc_b = next_before * factor
+                        yoc_a = next_after * factor
                         factor = nos * factor
                         for d in d_rows[:-1]:
                             cps = factor / d[consts.DIV_NOS]
-                            d[consts.DIV_YOC_B] = "{:.2f}%".format(d[consts.DIV_BEFORE] * cps)
-                            d[consts.DIV_YOC_A] = "{:.2f}%".format(d[consts.DIV_AFTER] * cps)
+                            # d[consts.DIV_YOC_B] = "{:.2f}%".format(d[consts.DIV_BEFORE] * cps)
+                            # d[consts.DIV_YOC_A] = "{:.2f}%".format(d[consts.DIV_AFTER] * cps)
+                            d[consts.DIV_YOC_B] = d[consts.DIV_BEFORE] * cps
+                            d[consts.DIV_YOC_A] = d[consts.DIV_AFTER] * cps
 
                     d_rows.insert(-1, ["Next", "", "", nos, dps, next_before, yoc_b, next_after, yoc_a, "", ])
                     if nos > 0:
@@ -134,13 +139,15 @@ class Dividends:
                             next_annual_a = next_after * num_of_div_payments_per_year
                             yoc_a = next_annual_a * f
                             self.total_annual_div_a += next_annual_a
-                            t_row[consts.SMRY_YOC_A] = "{:.2f}%".format(yoc_a)
+                            # t_row[consts.SMRY_YOC_A] = "{:.2f}%".format(yoc_a)
+                            t_row[consts.SMRY_YOC_A] = yoc_a
                             t_row[consts.SMRY_ANN_DIV_A] = int(next_annual_a)
 
                             next_annual_b = next_before * num_of_div_payments_per_year
                             yoc_b = next_annual_b * f
                             self.total_annual_div_b += next_annual_b
-                            t_row[consts.SMRY_YOC_B] = "{:.2f}%".format(yoc_b)
+                            # t_row[consts.SMRY_YOC_B] = "{:.2f}%".format(yoc_b)
+                            t_row[consts.SMRY_YOC_B] = yoc_b
                             t_row[consts.SMRY_ANN_DIV_B] = int(next_annual_b)
 
     def update_dividend_table_with_div_increase_marker(self):

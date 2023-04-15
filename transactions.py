@@ -3,7 +3,8 @@ import fileprocessor
 
 
 class Transactions:
-    def __init__(self, start_year, prefix, current_date):
+    def __init__(self, start_year, prefix, current_date, out_path_prefix):
+        self.outPathPrefix = out_path_prefix
         self.numOfYears = None
         self.prefix = prefix
         self.totalInvested = 0
@@ -55,13 +56,10 @@ class Transactions:
                     ym = "{y}-{m:02d}".format(y=y, m=int(m))
                     cost = row[4]
                     op_sign = row[6]
-                    self.investmentCalendarMap[ym] = (
-                            self.investmentCalendarMap[ym] + op_sign * cost
-                    )
+                    self.investmentCalendarMap[ym] = (self.investmentCalendarMap[ym] + op_sign * cost)
             self.transactions.append([ticker, nos, round(inv)])
             cps = "{:.2f}".format(inv / nos) if nos != 0 else " "
             t_list.append(["Total", len(t_list), "", nos, inv, cps, "xx"])
-        self.totalInvested = round(self.totalInvested)
         for item in self.transactions:
             ticker, nos, invested = item
             if nos == 0:
@@ -70,7 +68,7 @@ class Transactions:
             else:
                 status = " "
                 alloc = "{:.2f}%".format(invested / self.totalInvested * 100)
-            item[5:5] = (alloc, "0.00%", 0, "0.00%", "0.00%", 0)
+            item[5:5] = (alloc, "0.00", 0, "0.00%", "0.00", 0)
             #                    yoc_a  ann_a ann_a%  yoc_b,  ann_b
             item.insert(1, status)
         self.cleanup_transaction_calendar()
@@ -95,6 +93,11 @@ class Transactions:
         sigma_row[3] = round(sigma_row[0] / self.numOfYears)
         self.investmentCalendar.append(sigma_row)
         # print(total_row)
+
+        fname = f'{self.outPathPrefix}/investment_details.log'
+        with open(fname, "w") as f:
+            for r in self.investmentCalendar[0:12]:
+                print(', '.join(str(e) for e in r), file=f)
 
     def process_names(self):
         f = self.prefix + "/names.txt"
@@ -130,12 +133,8 @@ class Transactions:
             "Name",
             "Sector",
         ]
-        return (
-            self.transactions,
-            self.transactionMap,
-            self.totalInvested,
-            summary_header,
-        )
+        # self.totalInvested = round(self.totalInvested)
+        return self.transactions, self.transactionMap, self.totalInvested, summary_header
 
     def get_investment_calendar(self):
         investment_calendar_header = [
@@ -144,7 +143,5 @@ class Transactions:
         month_names = list(calendar.month_name)[1:13]
         month_names.append("Total")
         month_names.append("Σ")
-        self.investmentCalendar = [
-            [" " if x == 0 else x for x in l] for l in self.investmentCalendar
-        ]
+        self.investmentCalendar = [[" " if x == 0 else x for x in l] for l in self.investmentCalendar]
         return self.investmentCalendar, investment_calendar_header, month_names

@@ -1,6 +1,6 @@
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import Qt
-import columnNames as consts
+import Constants as consts
 
 
 class TransactionModel(QtCore.QAbstractTableModel):
@@ -24,18 +24,14 @@ class TransactionModel(QtCore.QAbstractTableModel):
                 return QtGui.QColor(consts.CLOSED_POS_COLOR)
         if role == Qt.TextAlignmentRole:
             colNum = index.column()
-            return (
-                Qt.AlignLeft | Qt.AlignVCenter
-                if (colNum < 2)
-                else Qt.AlignRight | Qt.AlignVCenter
-            )
+            return Qt.AlignLeft | Qt.AlignVCenter if (colNum < 2) else Qt.AlignRight | Qt.AlignVCenter
         if role != Qt.ItemDataRole.DisplayRole:
             # for all roles you're not interested in return python's None
             # which is interpreted as an invalid QVariant value
             return None
         if col == 4:
-            return "{:.2f}".format(self._data[index.row()][col])
-        return self._data[index.row()][index.column()]
+            return "{:.2f}".format(d[col])
+        return d[col]
 
     def rowCount(self, index):
         # The length of the outer list.

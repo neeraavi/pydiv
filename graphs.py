@@ -23,8 +23,11 @@ class Grapher:
         fname = f'{self.outPathPrefix}/sector_details.log'
         with open(fname) as f:
             sector_data = list(list(rec) for rec in csv.reader(f, delimiter=','))
-        names = [i[0] for i in sector_data]
-        values = [float(i[1]) for i in sector_data]
+        # names = [i[0] for i in sector_data]
+        # values = [float(i[1]) for i in sector_data]
+        names, values = zip(*[(i[0], float(i[1])) for i in sector_data])
+        # div_b = sum(blist)
+        # div_a = sum(alist)
         # print(names, values)
 
         fig, ax = plt.subplots(1, 1, figsize=(10, 6), tight_layout=True)
@@ -45,26 +48,44 @@ class Grapher:
         divs = np.loadtxt(fname, delimiter=",", dtype=int)
         # print(divs)
 
+        fname = f'{self.outPathPrefix}/investment_details.log'
+        invs = np.loadtxt(fname, delimiter=",", dtype=int)
+
         start_year = 2015
         today = datetime.datetime.now()
 
-        c = 0
+        div = inv = 0
         c_div = []
+        c_inv = []
 
         fig, (ax1, ax2) = plt.subplots(2, figsize=(10, 6), tight_layout=True)
         for y in range(start_year, today.year + 1):
             for m in range(12):
-                c += divs[m][today.year - y]
-                c_div.append(c)
+                div += divs[m][today.year - y]
+                c_div.append(div)
+                inv += invs[m][today.year - y]
+                c_inv.append(inv)
         # print(c_div, '.................')
         # ypoints = np.array(c_div)
         data_length = len(c_div)
+        ax3 = ax2.twinx()
+        # ax3 = ax_bot
         x = np.arange(0, data_length, 1).tolist()
-        ax2.plot(x, c_div)
+        ax2.plot(x, c_div, color='g', alpha=0.4)
+        ax2.yaxis.tick_right()
+        # ax2.yaxis.set_label_position("right")
+        ax2.tick_params(axis='y', labelcolor='g')
+
+        # ax3.yaxis.set_label_position("right")
+        # ax3.yaxis.tick_left()
+        ax3.yaxis.tick_left()
+        ax3.tick_params(axis='y', labelcolor='b')
+        ax3.plot(x, c_inv, color='b', alpha=0.2)
         ax2.set_ylim(bottom=0)
         ax2.set_xlim(left=0)
-        major_ticks = np.arange(0, data_length + 12, 12)
-        minor_ticks = np.arange(0, data_length + 12, 1)
+        extended = data_length + 12
+        major_ticks = np.arange(0, extended, 12)
+        minor_ticks = np.arange(0, extended, 1)
         ax2.set_xticks(major_ticks)
         ax2.set_xticks(minor_ticks, minor=True)
         ax2.grid(which='major', color='g', linestyle='-', linewidth=1, alpha=0.5)

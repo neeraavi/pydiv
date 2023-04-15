@@ -1,7 +1,8 @@
-from TransactionModel import TransactionModel
-from PyQt5 import QtCore, QtGui
+from PyQt5 import QtGui
 from PyQt5.QtCore import Qt
-import columnNames as consts
+
+import Constants as consts
+from TransactionModel import TransactionModel
 
 
 class CalendarModel(TransactionModel):
@@ -17,9 +18,9 @@ class CalendarModel(TransactionModel):
         if role == Qt.BackgroundRole:
             if row == 12:
                 return QtGui.QColor(consts.TOTAL_COLOR)
-            if row == 13:
+            elif row == 13:
                 return QtGui.QColor(consts.AVG_ROW_COLOR)
-            if row == 14:
+            elif row == 14:
                 return QtGui.QColor(consts.NEXT_COLOR)
         if role == Qt.ForegroundRole:
             if "*" in str(d[1]):
@@ -31,4 +32,4 @@ class CalendarModel(TransactionModel):
             # which is interpreted as an invalid QVariant value
             return None
         col = index.column()
-        return self._data[index.row()][index.column()]
+        return d[col]
