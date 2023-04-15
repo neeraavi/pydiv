@@ -371,10 +371,11 @@ class Window(QtWidgets.QMainWindow):
         div_b = 0
         for r in result:
             r[consts.DIV_DPS] = "{m:0.2f}".format(m=r[consts.DIV_DPS])
-            # print(r[consts.DIV_DPS])
         if len(result) > 0:
-            div_b = sum(row[consts.DIV_BEFORE] for row in result)
-            div_a = sum(row[consts.DIV_AFTER] for row in result)
+            blist, alist = zip(*[((row[consts.DIV_BEFORE]), (row[consts.DIV_AFTER])) for row in result])
+            div_b = sum(blist)
+            div_a = sum(alist)
+
             nos = len(result)
             row = ['Total', nos, '', '', '', round(div_b), '', round(div_a), '', '', '']
             result.append(row)
