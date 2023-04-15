@@ -8,7 +8,8 @@ def transpose_matrix(matrix):
 
 
 class Dividends:
-    def __init__(self, start_year, prefix, transactions_list, total_investment, current_date):
+    def __init__(self, start_year, prefix, transactions_list, total_investment, current_date, outPathPrefix):
+        self.outPathPrefix = outPathPrefix
         self.month_names = None
         self.dividend_calendar_header = None
         self.numOfYears = None
@@ -222,13 +223,10 @@ class Dividends:
         self.dividends_calendar_after_tax.append(sigma_row)
         # print(total_row)
 
-        fname=f'out/dividend_details.log'
+        fname = f'{self.outPathPrefix}/dividend_details.log'
         with open(fname, "w") as f:
             for r in self.dividends_calendar_before_tax[0:12]:
                 print(', '.join(str(e) for e in r), file=f)
-
-
-
 
     def update_summary_table_with_div_contrib_from_each_ticker(self):
         factor = 100 / self.total_annual_div_a

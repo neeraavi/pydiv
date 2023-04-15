@@ -162,7 +162,8 @@ class Window(QtWidgets.QMainWindow):
         self._tickers_active_only = [x[consts.SMRY_TICKER] for x in self.summary_active_positions_only]
 
     def do_calculations_on_dividends(self):
-        self.div_obj = Dividends.Dividends(self.startYear, self.pathPrefix, self.summary, self.totalInvested, self.now)
+        self.div_obj = Dividends.Dividends(self.startYear, self.pathPrefix, self.summary, self.totalInvested, self.now,
+                                           self.outPathPrefix)
         self.update_dividend_calendar(self.div_obj)
         (self.dividendMap, self.dividendHeader, self.annual_div_a,
          self.annual_div_b) = self.div_obj.get_dividend_results()
@@ -284,10 +285,10 @@ class Window(QtWidgets.QMainWindow):
             [consts.LBL_FwdAnnDivA_before_deduction , "FwdAnnDivA: {m:0.0f}".format(m=self.annual_div_a)]              ,
             [consts.LBL_FwdAnnDivA_after_deduction  , "FwdAnnDivA: {m:0.0f}".format(m=annual_div_after_deduction_claim)],
             [consts.LBL_YoC_A                       , "YoC_A:   {m:0.2f}%".format(m=yoc_a)]                              ,
-            [consts.LBL_FwdAnnDivA_M                , "FwdAnnDivA_M: {m:0.0f}".format(m=fwd_a_m)]                      ,
+            [consts.LBL_FwdAnnDivA_M                , "FwdDivA_M: {m:0.0f}".format(m=fwd_a_m)]                      ,
             [consts.LBL_FwdAnnDivB                  , "FwdAnnDivB: {m:0.0f}".format(m=self.annual_div_b)]              ,
             [consts.LBL_YoC_B                       , "YoC_B:   {m:0.2f}%".format(m=yoc_b)]                              ,
-            [consts.LBL_FwdAnnDivB_M                , "FwdAnnDivB_M: {m:0.0f}".format(m=self.annual_div_b / 12)]
+            [consts.LBL_FwdAnnDivB_M                , "FwdDivB_M: {m:0.0f}".format(m=self.annual_div_b / 12)]
         ]
         # @formatter:on
         for row in items:
@@ -575,11 +576,11 @@ class Window(QtWidgets.QMainWindow):
         self.p.start("python3", ['graphs.py'])
 
     def process_finished(self):
-        pixmap = QPixmap('out/sector_details.png')
+        pixmap = QPixmap(f'{self.outPathPrefix}/sector_details.png')
         # pixmap = pixmap.scaledToHeight(360)
         # pixmap = pixmap.scaled(1070, 360, QtCore.Qt.KeepAspectRatio)
         self.ui.image_label.setPixmap(pixmap)
-        pixmap2 = QPixmap('out/div_details.png')
+        pixmap2 = QPixmap(f'{self.outPathPrefix}/div_details.png')
         self.ui.graph_label.setPixmap(pixmap2)
         pass
         self.p = None
