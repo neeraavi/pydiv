@@ -18,9 +18,9 @@ class SummaryModel(QtCore.QAbstractTableModel):
         if role == Qt.BackgroundRole:
             if col == consts.SMRY_ALLOC:
                 return QtGui.QColor(consts.ALLOC_COLOR)
-            elif col == consts.SMRY_ANN_DIV_A or col == consts.SMRY_YOC_A:
+            elif col in [consts.SMRY_ANN_DIV_A, consts.SMRY_YOC_A]:
                 return QtGui.QColor(consts.AFTER_TAX_COLOR)
-            elif col == consts.SMRY_ANN_DIV_B or col == consts.SMRY_YOC_B:
+            elif col in [consts.SMRY_ANN_DIV_B, consts.SMRY_YOC_B]:
                 return QtGui.QColor(consts.BEFORE_TAX_COLOR)
             if col == 1:
                 div_change = d[1]
@@ -28,7 +28,7 @@ class SummaryModel(QtCore.QAbstractTableModel):
                     return QtGui.QColor(consts.INCR_COLOR)
                 elif consts.SIGN_SAME in div_change:
                     return QtGui.QColor(consts.SAME_COLOR)
-                elif "" == div_change:
+                elif div_change == "":
                     return QtGui.QColor(consts.UNKNOWN_COLOR)
                 elif consts.SIGN_DECR in div_change:
                     return QtGui.QColor(consts.DECR_COLOR)

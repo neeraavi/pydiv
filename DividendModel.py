@@ -18,9 +18,9 @@ class DividendModel(TransactionModel):
                 return QtGui.QColor(consts.TOTAL_COLOR)
             elif "Next" in str(d[0]):
                 return QtGui.QColor(consts.NEXT_COLOR)
-            elif col == consts.DIV_AFTER or col == consts.DIV_YOC_A:
+            elif col in [consts.DIV_AFTER, consts.DIV_YOC_A]:
                 return QtGui.QColor(consts.AFTER_TAX_COLOR)
-            elif col == consts.DIV_BEFORE or col == consts.DIV_YOC_B:
+            elif col in [consts.DIV_BEFORE, consts.DIV_YOC_B]:
                 return QtGui.QColor(consts.BEFORE_TAX_COLOR)
             return QtGui.QColor("#ffffff")
 

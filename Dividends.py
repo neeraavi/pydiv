@@ -1,6 +1,7 @@
 import calendar
 import fileprocessor
 import Constants as consts
+import itertools
 
 
 def transpose_matrix(matrix):
@@ -34,21 +35,20 @@ class Dividends:
         self.fill_dividends()
 
     def init_dividends_calendar(self):
-        self.dividend_calendar_header = [x for x in range(self.now.year, self.startYear - 1, -1)]
+        self.dividend_calendar_header = list(range(self.now.year, self.startYear - 1, -1))
         self.month_names = list(calendar.month_name)[1:13]
         self.month_names.extend(["Total", "Avg.", "Σ"])
 
-        for y in range(self.startYear, self.now.year + 1):
-            for m in range(1, 13):
-                ym = "{y}-{m:02d}".format(y=y, m=m)
-                self.dividends_calendar_map_before_tax[ym] = 0
-                self.dividends_calendar_map_after_tax[ym] = 0
+        for y, m in itertools.product(range(self.startYear, self.now.year + 1), range(1, 13)):
+            ym = "{y}-{m:02d}".format(y=y, m=m)
+            self.dividends_calendar_map_before_tax[ym] = 0
+            self.dividends_calendar_map_after_tax[ym] = 0
         self.numOfYears = self.now.year - self.startYear + 1
         self.dividends_calendar_before_tax = [[0] * self.numOfYears for _ in range(12)]
         self.dividends_calendar_after_tax = [[0] * self.numOfYears for _ in range(12)]
 
     def fill_dividends(self):
-        f = self.prefix + "/div.txt"
+        f = f"{self.prefix}/div.txt"
         return fileprocessor.process_file(f, self.dividends_processor, self.create_dividends_table_from_list)
 
     def dividends_processor(self, line):
@@ -63,7 +63,7 @@ class Dividends:
         before = float(before)
         dps = before / nos if dps == "" else float(dps)
         after = before * self.tax_factor if after == "" else float(after)
-        ym = yy + "-" + mm
+        ym = f"{yy}-{mm}"
         item = [ticker, freq, ym, nos, dps, before, "~yoc_b~", after, "~yoc_a~", where]
 
         if ticker not in self.dividendsMap:
@@ -157,7 +157,7 @@ class Dividends:
                 if 0 < index < len(divs) - 2:
                     prev_div = divs[index - 1][consts.DIV_DPS]
                     current_div = row[consts.DIV_DPS]
-                    if prev_div != current_div and prev_div != 0:
+                    if prev_div not in [current_div, 0]:
                         div_change = (current_div - prev_div) / prev_div * 100
                         sign = (consts.SIGN_INCR if prev_div < current_div else consts.SIGN_DECR)
                         row[consts.DIV_CHANGE] = "{:2.2f}% ".format(div_change) + sign
@@ -189,11 +189,10 @@ class Dividends:
                     transaction[consts.SMRY_STATUS] = result
 
     def update_dividends_calendar(self):
-        for y in range(self.startYear, self.now.year + 1):
-            for m in range(1, 13):
-                ym = "{y}-{m:02d}".format(y=y, m=m)
-                self.dividends_calendar_map_before_tax[ym] = round(self.dividends_calendar_map_before_tax[ym])
-                self.dividends_calendar_map_after_tax[ym] = round(self.dividends_calendar_map_after_tax[ym])
+        for y, m in itertools.product(range(self.startYear, self.now.year + 1), range(1, 13)):
+            ym = "{y}-{m:02d}".format(y=y, m=m)
+            self.dividends_calendar_map_before_tax[ym] = round(self.dividends_calendar_map_before_tax[ym])
+            self.dividends_calendar_map_after_tax[ym] = round(self.dividends_calendar_map_after_tax[ym])
 
         for m in range(1, 13):
             inner_list_before = self.dividends_calendar_before_tax[m - 1]
@@ -232,7 +231,7 @@ class Dividends:
 
         fname = f'{self.outPathPrefix}/dividend_details.log'
         with open(fname, "w") as f:
-            for r in self.dividends_calendar_before_tax[0:12]:
+            for r in self.dividends_calendar_before_tax[:12]:
                 print(', '.join(str(e) for e in r), file=f)
 
     def update_summary_table_with_div_contrib_from_each_ticker(self):

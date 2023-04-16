@@ -1,5 +1,6 @@
 import calendar
 import fileprocessor
+import itertools
 
 
 class Transactions:
@@ -20,28 +21,26 @@ class Transactions:
         self.fill_transactions()
 
     def init_investment_calendar(self):
-        for y in range(self.startYear, self.now.year + 1):
-            for m in range(1, 13):
-                ym = "{y}-{m:02d}".format(y=y, m=m)
-                self.investmentCalendarMap[ym] = 0
+        for y, m in itertools.product(range(self.startYear, self.now.year + 1), range(1, 13)):
+            ym = "{y}-{m:02d}".format(y=y, m=m)
+            self.investmentCalendarMap[ym] = 0
 
         self.numOfYears = self.now.year - self.startYear + 1
-        self.investmentCalendar = [[0] * self.numOfYears for i in range(12)]
+        self.investmentCalendar = [[0] * self.numOfYears for _ in range(12)]
 
     def transactions_processor(self, line):
         if line.startswith("#"):
             return None
-        else:
-            (name, yy, mm, dd, operation, nos, cost) = line.replace(" ", "").split("-")
-            op_sign = 1 if "Buy" in operation else -1
-            nos = int(nos)
-            cost = float(cost)
-            cps = "{:.2f}".format(cost / nos) if nos > 0 else "0.00"
-            ym = yy + "-" + mm
-            item = [name, operation, ym + "-" + dd, nos, cost, cps, op_sign]
-            if name not in self.transactionMap:
-                self.transactionMap[name] = []
-            self.transactionMap[name].append(item)
+        (name, yy, mm, dd, operation, nos, cost) = line.replace(" ", "").split("-")
+        op_sign = 1 if "Buy" in operation else -1
+        nos = int(nos)
+        cost = float(cost)
+        cps = "{:.2f}".format(cost / nos) if nos > 0 else "0.00"
+        ym = f"{yy}-{mm}"
+        item = [name, operation, f"{ym}-{dd}", nos, cost, cps, op_sign]
+        if name not in self.transactionMap:
+            self.transactionMap[name] = []
+        self.transactionMap[name].append(item)
 
     def create_summary_table_from_list(self):
         # [name, operation, ym + ' - ' + dd, nos, cost, cps, op_sign]'
@@ -75,10 +74,9 @@ class Transactions:
         self.process_names()
 
     def cleanup_transaction_calendar(self):
-        for y in range(self.startYear, self.now.year + 1):
-            for m in range(1, 13):
-                ym = "{y}-{m:02d}".format(y=y, m=m)
-                self.investmentCalendarMap[ym] = round(self.investmentCalendarMap[ym])
+        for y, m in itertools.product(range(self.startYear, self.now.year + 1), range(1, 13)):
+            ym = "{y}-{m:02d}".format(y=y, m=m)
+            self.investmentCalendarMap[ym] = round(self.investmentCalendarMap[ym])
 
         for m in range(1, 13):
             inner_list = self.investmentCalendar[m - 1]
@@ -96,11 +94,11 @@ class Transactions:
 
         fname = f'{self.outPathPrefix}/investment_details.log'
         with open(fname, "w") as f:
-            for r in self.investmentCalendar[0:12]:
+            for r in self.investmentCalendar[:12]:
                 print(', '.join(str(e) for e in r), file=f)
 
     def process_names(self):
-        f = self.prefix + "/names.txt"
+        f = f"{self.prefix}/names.txt"
         with open(f) as file:
             for line in file:
                 line = line.rstrip()
@@ -113,7 +111,7 @@ class Transactions:
                         t.extend([name, sector])
 
     def fill_transactions(self):
-        f = self.prefix + "/akt.txt"
+        f = f"{self.prefix}/akt.txt"
         return fileprocessor.process_file(
             f, self.transactions_processor, self.create_summary_table_from_list
         )
@@ -137,9 +135,7 @@ class Transactions:
         return self.transactions, self.transactionMap, self.totalInvested, summary_header
 
     def get_investment_calendar(self):
-        investment_calendar_header = [
-            x for x in range(self.now.year, self.startYear - 1, -1)
-        ]
+        investment_calendar_header = list(range(self.now.year, self.startYear - 1, -1))
         month_names = list(calendar.month_name)[1:13]
         month_names.append("Total")
         month_names.append("Σ")

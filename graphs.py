@@ -1,6 +1,7 @@
 import json
 import calendar
 import csv
+import itertools
 import numpy as np
 import datetime as datetime
 import matplotlib.pyplot as plt
@@ -22,7 +23,7 @@ class Grapher:
     def graph_sectors(self):
         fname = f'{self.outPathPrefix}/sector_details.log'
         with open(fname) as f:
-            sector_data = list(list(rec) for rec in csv.reader(f, delimiter=','))
+            sector_data = [list(rec) for rec in csv.reader(f, delimiter=',')]
         # names = [i[0] for i in sector_data]
         # values = [float(i[1]) for i in sector_data]
         names, values = zip(*[(i[0], float(i[1])) for i in sector_data])
@@ -59,12 +60,11 @@ class Grapher:
         c_inv = []
 
         fig, (ax1, ax2) = plt.subplots(2, figsize=(10, 6), tight_layout=True)
-        for y in range(start_year, today.year + 1):
-            for m in range(12):
-                div += divs[m][today.year - y]
-                c_div.append(div)
-                inv += invs[m][today.year - y]
-                c_inv.append(inv)
+        for y, m in itertools.product(range(start_year, today.year + 1), range(12)):
+            div += divs[m][today.year - y]
+            c_div.append(div)
+            inv += invs[m][today.year - y]
+            c_inv.append(inv)
         # print(c_div, '.................')
         # ypoints = np.array(c_div)
         data_length = len(c_div)
@@ -112,27 +112,19 @@ class Grapher:
         rects = ax2.bar(xax, s)
         ax2.bar_label(rects, fmt="%d", fontsize=6, rotation=0, label_type='edge', padding=5, color='red')
 
-        years = [i for i in range(today.year, start_year - 1, -1)]
+        years = list(range(today.year, start_year - 1, -1))
         months = [calendar.month_abbr[i + 1] for i in range(12)]
-        # print(years, months)
-
-        means = {}
-        for idx, y in enumerate(years):
-            means[y] = divs[idx]
+        means = {y: divs[idx] for idx, y in enumerate(years)}
         # print(means)
 
         x = np.arange(len(months))  # the label locations
         width = 0.1  # the width of the bars
-        multiplier = 0
-
         # fig, ax = plt.subplots(figsize=(10, 6),tight_layout=True)
-        for attribute, measurement in means.items():
+        for multiplier, (attribute, measurement) in enumerate(means.items()):
             offset = width * multiplier
             rects = ax1.bar(x + offset, measurement, width, label=attribute)
             # ax.bar_label(rects, padding=3)
             ax1.bar_label(rects, fmt="%d", fontsize=6, rotation=90, label_type='center', padding=3, color='white')
-            multiplier += 1
-
         # Add some text for labels, title and custom x-axis tick labels, etc.
         ax1.set_ylabel('Div_B')
         ax1.set_title('Div progress')

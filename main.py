@@ -92,6 +92,7 @@ class Window(QtWidgets.QMainWindow):
         self.setFixedSize(self.width(), self.height())
         self.setup_connections()
         self.start_external_process()
+        self.setWindowIcon(QtGui.QIcon('icon.png'))
 
     def setup_shortcuts(self):
         # @formatter:off
@@ -114,8 +115,7 @@ class Window(QtWidgets.QMainWindow):
         tab = self.ui.tabWidget
         cur_index = tab.currentIndex()
         if cur_index == 1:
-            c = self.ui.afterTax.isChecked()
-            if c:
+            if c := self.ui.afterTax.isChecked():
                 self.ui.beforeTax.setChecked(True)
             else:
                 self.ui.afterTax.setChecked(True)
@@ -126,8 +126,7 @@ class Window(QtWidgets.QMainWindow):
         self.proxyModel.setSourceModel(source_model)
 
     def select_summary_based_on_show_closed_positions(self):
-        show_closed_pos = self.ui.showClosedPositions.isChecked()
-        if show_closed_pos:
+        if show_closed_pos := self.ui.showClosedPositions.isChecked():
             return self.summary, self._tickers_all
         return self.summary_active_positions_only, self._tickers_active_only
 
@@ -346,7 +345,7 @@ class Window(QtWidgets.QMainWindow):
         result = [row for ticker, items in self.dividendMap.items() for row in items if ym in row[consts.DIV_YM]]
         result = copy.deepcopy(result)
         result = sorted(result, key=itemgetter(consts.DIV_TICKER))
-        current_tickers = set([r[0] for r in result])
+        current_tickers = {r[0] for r in result}
         div_a = 0
         div_b = 0
         # for r in result:
@@ -374,9 +373,7 @@ class Window(QtWidgets.QMainWindow):
             # print(prev_tickers, len(prev_tickers))
             expected = prev_tickers.difference(current_tickers)
 
-            new = current_tickers.difference(prev_tickers)
-            # print(len(new), new)
-            if len(new) > 0:
+            if new := current_tickers.difference(prev_tickers):
                 for row in result:
                     for n in new:
                         if row[consts.SMRY_TICKER] == n:
@@ -391,12 +388,12 @@ class Window(QtWidgets.QMainWindow):
                     d = divs[-3]
                     # print(d)
                     f = d[consts.DIV_FREQ]
-                    dps = d[consts.DIV_DPS]
                     ppy = fileprocessor.payments_per_year(f)
                     # print(ticker, row[consts.SMRY_ANN_DIV_A], row[consts.SMRY_ANN_DIV_B],
                     #      row[consts.SMRY_STATUS], f, dps, '##', ppy)
                     e_b = row[consts.SMRY_ANN_DIV_B] / ppy
                     e_a = row[consts.SMRY_ANN_DIV_A] / ppy
+                    dps = d[consts.DIV_DPS]
                     e_row = [f'~ {ticker}', f, '', row[consts.SMRY_NOS], dps, e_b, '', e_a, '', '', '']
                     e_divs.append(e_row)
 
