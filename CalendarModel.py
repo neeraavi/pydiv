@@ -22,6 +22,13 @@ class CalendarModel(TransactionModel):
                 return QtGui.QColor(consts.AVG_ROW_COLOR)
             elif row == 14:
                 return QtGui.QColor(consts.NEXT_COLOR)
+            rem = row % 3
+            if rem == 0:
+                return QtGui.QColor('white')
+            if rem == 1:
+                return QtGui.QColor('#e9f5db')
+            if rem == 2:
+                return QtGui.QColor('#cfe1b9')
         if role == Qt.ForegroundRole:
             if "*" in str(d[1]):
                 return QtGui.QColor("#ff0000")

@@ -32,6 +32,8 @@ class DividendModel(TransactionModel):
         if role != Qt.ItemDataRole.DisplayRole:
             return None
         da = self._data[index.row()][index.column()]
+        if isinstance(da, float) and (col == 6 or col == 8):
+            return "{:.2f}%".format(da)
         if isinstance(da, float):
             return "{:.2f}".format(da)
         # if col == 4:
@@ -39,6 +41,4 @@ class DividendModel(TransactionModel):
         #    if isinstance(d, float):
         #        return "{:.3f}".format(d)
         #    return d
-        # if col == 5 or col == 7:
-        #    return "{:.2f}".format(d[col])
         return d[col]

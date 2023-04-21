@@ -46,6 +46,8 @@ class Dividends:
         self.numOfYears = self.now.year - self.startYear + 1
         self.dividends_calendar_before_tax = [[0] * self.numOfYears for _ in range(12)]
         self.dividends_calendar_after_tax = [[0] * self.numOfYears for _ in range(12)]
+        # self.dividends_calendar_before_tax = [[0] * self.numOfYears] * 12
+        # self.dividends_calendar_after_tax = [[0] * self.numOfYears] * 12
 
     def fill_dividends(self):
         f = f"{self.prefix}/div.txt"

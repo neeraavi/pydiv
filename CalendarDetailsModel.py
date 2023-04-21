@@ -22,6 +22,7 @@ class CalendarDetailsModel(TransactionModel):
                 return QtGui.QColor(consts.EXPECTED_TOTAL_MDIV_COLOR)
             if "Expected" in n:
                 return QtGui.QColor(consts.EXPECTED_DIV_COLOR_BG)
+
         if role == Qt.ForegroundRole:
             if n.startswith('.'):
                 return QtGui.QColor(consts.NEW_DIV_COLOR)
