@@ -29,7 +29,7 @@ class CalendarDetailsModel(TransactionModel):
             elif n.startswith('~'):
                 return QtGui.QColor(consts.EXPECTED_DIV_COLOR)
         if role == Qt.TextAlignmentRole:
-            return Qt.AlignRight
+            return Qt.AlignRight | Qt.AlignVCenter
         if role != Qt.ItemDataRole.DisplayRole:
             # for all roles you're not interested in return python's None
             # which is interpreted as an invalid QVariant value

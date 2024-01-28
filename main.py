@@ -1,26 +1,31 @@
 import copy
+import csv
 import json
 import sys
 from datetime import datetime
 from operator import itemgetter
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import QItemSelectionModel, QProcess, Qt
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QApplication, QFrame, QHeaderView, QLabel
+from PyQt5.QtWidgets import QApplication, QFrame, QHeaderView, QLabel, QSystemTrayIcon
+from PyQt5.QtWidgets import QMessageBox
 
 import Constants as consts
 import Dividends
 import fileprocessor
 import transactions
+import fetcher
 from CalendarDetailsModel import CalendarDetailsModel
 from CalendarModel import CalendarModel
 from DividendModel import DividendModel
+from YFTableModel import YFTableModel
 from divui import Ui_MainWindow
 from SectorDetailsModel import SectorDetailsModel
 from SectorModel import SectorModel
 from SummaryModel import SummaryModel
 from TransactionModel import TransactionModel
+import logo_rc
 
 
 def get_last_1_2_6_12_ym(y, m):
@@ -43,8 +48,10 @@ def resize_columns_for_details_view(view, cols):
     hh.setSectionResizeMode(QHeaderView.ResizeToContents)
     for col in cols:
         hh.setSectionResizeMode(col, QHeaderView.Stretch)
-    view.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+    # view.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
     view.scrollToBottom()
+    # view.resizeRowsToContents()
+    # view.resizeColumnsToContents()
     view.show()
 
 
@@ -62,6 +69,11 @@ def resize_columns_for_calendar_view(view):
 class Window(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         super(Window, self).__init__(parent)
+        self.reload()
+        self.setup_shortcuts()
+
+    def reload(self):
+        # super(Window, self).__init__(parent)
         self.div_obj = None
         self._label_ = []
         self.calendarDetailsModel = None
@@ -84,8 +96,8 @@ class Window(QtWidgets.QMainWindow):
         self.parse_config()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-
-        self.setup_shortcuts()
+        # self.setWindowIcon(QtGui.QIcon('icon.png'))
+        # self.setup_shortcuts()
         self.create_status_bar()
         self.fill_summary_table()
         self.display_summary_table()
@@ -93,19 +105,23 @@ class Window(QtWidgets.QMainWindow):
         self.set_font()
         self.setFixedSize(self.width(), self.height())
         self.setup_connections()
+        self.write_summary_to_file()
         self.start_external_process()
-        self.setWindowIcon(QtGui.QIcon('icon.png'))
+        ## self.ui.summaryView.setCursor(Qt.PointingHandCursor)
 
     def setup_shortcuts(self):
         # @formatter:off
         key_function_mapping = [
-            [QtGui.QKeySequence.StandardKey.Find, self.ui.mainFilter.setFocus],
+            [QtGui.QKeySequence.StandardKey.Find, self.reset_main_filter],
             [QtGui.QKeySequence.StandardKey.Cancel, self.reset_main_filter],
+            [QtCore.Qt.Key_F12, self.reset_main_filter],
+            [QtGui.QKeySequence("Space"), self.reset_main_filter],
+            #[QtGui.QKeySequence("+"), self.reset_main_filter],
             [QtGui.QKeySequence.StandardKey.Quit, self.close],
-            [QtCore.Qt.Key_F2, lambda: self.ui.searchAllColumns.setChecked(
-                not self.ui.searchAllColumns.isChecked())],
-            [QtCore.Qt.Key_F3, lambda: self.ui.showClosedPositions.setChecked(
-                not self.ui.showClosedPositions.isChecked())],
+            [QtGui.QKeySequence("Ctrl+R"), self.reload],
+            [QtCore.Qt.Key_F2, self.search_all_columns],
+            [QtCore.Qt.Key_F3, lambda: self.ui.showClosedPositions.setChecked(not self.ui.showClosedPositions.isChecked())],
+            [QtCore.Qt.Key_F5, self.write_summary_to_file],
             [QtCore.Qt.Key_Tab, self.next_tab],
             [QtCore.Qt.Key_NumberSign, self.toggle_before_after],
         ]
@@ -114,6 +130,14 @@ class Window(QtWidgets.QMainWindow):
         for item in key_function_mapping:
             shortcut = QtWidgets.QShortcut(item[0], self)
             shortcut.activated.connect(item[1])
+
+    def write_summary_to_file(self):
+        print(self.selected_summary)
+        file_name = f'{self.outPathPrefix}/summary_table.csv'
+        with open(file_name, "w") as f:
+            for item in self.selected_summary:
+                print(item[0], ',', item[2], ',', item[3], file=f)
+        print('summary_tabls.csv ........written')
 
     def toggle_before_after(self):
         tab = self.ui.tabWidget
@@ -125,8 +149,7 @@ class Window(QtWidgets.QMainWindow):
                 self.ui.afterTax.setChecked(True)
 
     def update_on_closed_positions_changed(self):
-        (self.selected_summary,
-         self.visible_tickers) = self.select_summary_based_on_show_closed_positions()
+        (self.selected_summary, self.visible_tickers) = self.select_summary_based_on_show_closed_positions()
         source_model = SummaryModel(self.selected_summary, self.summaryHeader)
         self.proxyModel.setSourceModel(source_model)
 
@@ -139,16 +162,18 @@ class Window(QtWidgets.QMainWindow):
         cols = -1 if self.ui.searchAllColumns.isChecked() else consts.SMRY_TICKER
         self.proxyModel.setFilterKeyColumn(cols)
 
+    def yf_search_all_columns_changed(self):
+        cols = -1 if self.ui.yf_searchAllColumns.isChecked() else 0
+        self.yf_proxyModel.setFilterKeyColumn(cols)
+
     def setup_connections(self):
-        self.ui.mainFilter.returnPressed.connect(
-            lambda: self.ui.summaryView.setFocus())
-        self.ui.showClosedPositions.stateChanged.connect(
-            self.update_on_closed_positions_changed)
-        self.ui.searchAllColumns.stateChanged.connect(
-            self.search_all_columns_changed)
+        self.ui.mainFilter.returnPressed.connect(lambda: self.ui.summaryView.setFocus())
+        self.ui.showClosedPositions.stateChanged.connect(self.update_on_closed_positions_changed)
+        self.ui.searchAllColumns.stateChanged.connect(self.search_all_columns_changed)
+        self.ui.yf_searchAllColumns.stateChanged.connect(self.yf_search_all_columns_changed)
+        self.ui.yf_filter.returnPressed.connect(lambda: self.ui.yf_view.setFocus())
         self.ui.mainFilter.textChanged.connect(self.ticker_filter_changed)
-        self.ui.beforeTax.toggled.connect(
-            lambda: self.update_dividend_calendar(self.div_obj))
+        self.ui.beforeTax.toggled.connect(lambda: self.update_dividend_calendar(self.div_obj))
 
     def fill_summary_table(self):
         self.do_calculations_on_transactions()
@@ -156,16 +181,12 @@ class Window(QtWidgets.QMainWindow):
         self.do_calculations_on_sector()
 
     def do_calculations_on_transactions(self):
-        t = transactions.Transactions(
-            self.startYear, self.pathPrefix, self.now, self.outPathPrefix)
+        t = transactions.Transactions(self.startYear, self.pathPrefix, self.now, self.outPathPrefix)
         self.update_transaction_calendar(t)
-        (self.summary, self.transactionMap, self.totalInvested,
-         self.summaryHeader) = t.get_transaction_results()
-        self.summary_active_positions_only = [
-            x for x in self.summary if x[consts.SMRY_STATUS] != "*"]
+        (self.summary, self.transactionMap, self.totalInvested, self.summaryHeader) = t.get_transaction_results()
+        self.summary_active_positions_only = [x for x in self.summary if x[consts.SMRY_STATUS] != "*"]
         self._tickers_all = [x[consts.SMRY_TICKER] for x in self.summary]
-        self._tickers_active_only = [x[consts.SMRY_TICKER]
-                                     for x in self.summary_active_positions_only]
+        self._tickers_active_only = [x[consts.SMRY_TICKER] for x in self.summary_active_positions_only]
 
     def do_calculations_on_dividends(self):
         self.div_obj = Dividends.Dividends(self.startYear, self.pathPrefix, self.summary, self.totalInvested, self.now,
@@ -184,18 +205,29 @@ class Window(QtWidgets.QMainWindow):
 
         view = self.ui.summaryView
         view.setModel(self.proxyModel)
-        view.selectionModel().selectionChanged.connect(
-            self.display_filtered_transactions_and_dividends)
+        view.selectionModel().selectionChanged.connect(self.display_filtered_transactions_and_dividends)
         view.setWordWrap(False)
         view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         for col in range(10):
-            view.horizontalHeader().setSectionResizeMode(
-                col, QtWidgets.QHeaderView.ResizeToContents)
+            view.horizontalHeader().setSectionResizeMode(col, QtWidgets.QHeaderView.ResizeToContents)
         view.show()
         view.setCurrentIndex(view.model().index(0, 0))
 
+    def search_all_columns(self):
+        tab_idx = self.ui.tabWidget.currentIndex()
+        if tab_idx == 0:
+            self.ui.searchAllColumns.setChecked(not self.ui.searchAllColumns.isChecked())
+        elif tab_idx == 4:
+            self.ui.yf_searchAllColumns.setChecked(not self.ui.yf_searchAllColumns.isChecked())
+
     def reset_main_filter(self):
-        m_filter = self.ui.mainFilter
+        tab_idx = self.ui.tabWidget.currentIndex()
+        if tab_idx == 0:
+            m_filter = self.ui.mainFilter
+        elif tab_idx == 4:
+            m_filter = self.ui.yf_filter
+        else:
+            return
         if m_filter.hasFocus():
             m_filter.setText("")
         else:
@@ -241,7 +273,7 @@ class Window(QtWidgets.QMainWindow):
     def create_status_bar(self):
         self.ui.status_bar = self.statusBar()
         font = QtGui.QFont()
-        font.setFamily(self.mainFont)
+        font.setFamily("Ubuntu")
         # font.setStyleHint(font.Monospace)
         font.setPointSize(10)
         colors = ['lightskyblue', 'lightskyblue',
@@ -282,27 +314,23 @@ class Window(QtWidgets.QMainWindow):
             item.setFont(font)
 
     def update_status_bar(self):
-        annual_div_after_deduction_claim = self.annual_div_a + consts.TAX_Standard_deduction
+        # no tax payable for amount TAX_Standard_deduction
+        annual_div_after_deduction_claim = int(self.annual_div_a + consts.TAX_Standard_deduction * .27)
         f = 100 / self.totalInvested
         yoc_a = annual_div_after_deduction_claim * f
         yoc_b = self.annual_div_b * f
         fwd_a_m = annual_div_after_deduction_claim / 12
         # @formatter:off
         items = [
-            [consts.LBL_ACTIVE,
-                f"Active#  {len(self.summary_active_positions_only)}"],
+            [consts.LBL_ACTIVE,f"Active#  {len(self.summary_active_positions_only)}"],
             [consts.LBL_INVESTED, f"Invested:  {round(self.totalInvested)}"],
-            [consts.LBL_FwdAnnDivA_before_deduction,
-                "FwdAnnDivA: {m:0.0f}".format(m=self.annual_div_a)],
-            [consts.LBL_FwdAnnDivA_after_deduction, "FwdAnnDivA: {m:0.0f}".format(
-                m=annual_div_after_deduction_claim)],
+            [consts.LBL_FwdAnnDivA_before_deduction, "FwdAnnDivA: {m:0.0f}".format(m=self.annual_div_a)],
+            [consts.LBL_FwdAnnDivA_after_deduction, "FwdAnnDivA: {m:0.0f}".format(m=annual_div_after_deduction_claim)],
             [consts.LBL_YoC_A, "YoC_A:   {m:0.2f}%".format(m=yoc_a)],
             [consts.LBL_FwdAnnDivA_M, "FwdDivA_M: {m:0.0f}".format(m=fwd_a_m)],
-            [consts.LBL_FwdAnnDivB, "FwdAnnDivB: {m:0.0f}".format(
-                m=self.annual_div_b)],
+            [consts.LBL_FwdAnnDivB, "FwdAnnDivB: {m:0.0f}".format(m=self.annual_div_b)],
             [consts.LBL_YoC_B, "YoC_B:   {m:0.2f}%".format(m=yoc_b)],
-            [consts.LBL_FwdAnnDivB_M, "FwdDivB_M: {m:0.0f}".format(
-                m=self.annual_div_b / 12)]
+            [consts.LBL_FwdAnnDivB_M, "FwdDivB_M: {m:0.0f}".format(m=self.annual_div_b / 12)]
         ]
         # @formatter:on
         for row in items:
@@ -388,8 +416,7 @@ class Window(QtWidgets.QMainWindow):
             div_b = sum(blist)
             div_a = sum(alist)
             nos = len(result)
-            row = ['Total', nos, '', '', '', round(
-                div_b), '', round(div_a), '', '', '']
+            row = ['Total', nos, '', '', '', round(div_b), '', round(div_a), '', '', '']
             result.append(row)
 
         # -------------------------------------------------------
@@ -416,7 +443,8 @@ class Window(QtWidgets.QMainWindow):
             e_divs = []
             for row in self.summary:
                 ticker = row[consts.SMRY_TICKER]
-                if ticker in expected:
+                nos = row[consts.SMRY_NOS]
+                if ticker in expected and nos > 0:
                     divs = self.dividendMap[ticker]
                     d = divs[-3]
                     # print(d)
@@ -427,8 +455,7 @@ class Window(QtWidgets.QMainWindow):
                     e_b = row[consts.SMRY_ANN_DIV_B] / ppy
                     e_a = row[consts.SMRY_ANN_DIV_A] / ppy
                     dps = d[consts.DIV_DPS]
-                    e_row = [f'~ {ticker}', f, '', row[consts.SMRY_NOS],
-                             dps, e_b, '', e_a, '', '', '']
+                    e_row = [f'~ {ticker}', f, '', row[consts.SMRY_NOS], dps, e_b, '', e_a, '', '', '']
                     e_divs.append(e_row)
 
             e_divs = sorted(e_divs, key=itemgetter(consts.DIV_TICKER))
@@ -437,17 +464,15 @@ class Window(QtWidgets.QMainWindow):
                 #    r[consts.DIV_DPS] = "{m:0.2f}".format(m=r[consts.DIV_DPS])
                 # div_e_b = sum(row[consts.DIV_BEFORE] for row in e_divs)
                 # div_e_a = sum(row[consts.DIV_AFTER] for row in e_divs)
-                b_list, a_list = zip(
-                    *[((row[consts.DIV_BEFORE]), (row[consts.DIV_AFTER])) for row in e_divs])
+                b_list, a_list = zip(*[((row[consts.DIV_BEFORE]), (row[consts.DIV_AFTER])) for row in e_divs])
                 div_e_b = sum(b_list)
                 div_e_a = sum(a_list)
 
                 nos = len(e_divs)
-                row = ['Expected', nos, '', '', '', round(
-                    div_e_b), '', round(div_e_a), '', '', '']
+                row = ['Expected', nos, '', '', '', round(div_e_b), '', round(div_e_a), '', '', '']
                 e_divs.append(row)
-                row = ['##', nos, '', '', '', round(
-                    div_b + div_e_b), '', round(div_a + div_e_a), '', '', '']
+                row = ['##', nos + len(result) - 1, '', '', '', round(div_b + div_e_b), '', round(div_a + div_e_a), '',
+                       '', '']
                 e_divs.append(row)
 
             result.extend(e_divs)
@@ -471,8 +496,9 @@ class Window(QtWidgets.QMainWindow):
                 view.setColumnWidth(i, 60)
             view.setColumnWidth(0, 100)
             view.setColumnWidth(2, 80)
-            view.horizontalHeader().setSectionResizeMode(
-                consts.DIV_BEFORE, QHeaderView.Stretch)
+            view.horizontalHeader().setSectionResizeMode(consts.DIV_BEFORE, QHeaderView.Stretch)
+        view.resizeRowsToContents()
+        # view.resizeColumnsToContents()
         view.show()
 
     def next_tab(self):
@@ -577,7 +603,14 @@ class Window(QtWidgets.QMainWindow):
     def start_external_process(self):
         self.p = QProcess()
         self.p.finished.connect(self.process_finished)
-        self.p.start("python3", ['graphs.py'])
+        # self.p.start("python3", ['graphs.py'])
+        self.p.start("/home/iyerns/tmp/tt/bin/python", ['graphs.py'])
+
+        # self.fy = QProcess()
+        # self.fy.finished.connect(self.fy_finished)
+        # self._label_[-1].setStyleSheet("background-color: yellow")
+        # self.fy.start("/home/iyerns/tmp/tt/bin/python", ['fetcher.py'])
+        ## self.fy_finished()
 
     def process_finished(self):
         pixmap = QPixmap(f'{self.outPathPrefix}/sector_details.png')
@@ -586,9 +619,62 @@ class Window(QtWidgets.QMainWindow):
         self.ui.graph_label.setPixmap(pixmap2)
         self.p = None
 
+    def fy_finished(self):
+        # QMessageBox.about(self, "Title", "yf done")
+        self.yfdata = []
+        with open('/home/iyerns/tmp/out/stock_data.csv', 'r') as f:
+            reader = csv.reader(f)
+            headers = next(reader, None)
+            # next(reader)  # Skip header row
+            self.yfHeader = headers
+            for row in reader:
+                self.reformat_yf_entries(row)
+            self.display_yf_table()
+        self._label_[-1].setStyleSheet("background-color: yellowgreen")
+
+    def reformat_yf_entries(self, row):
+        row[2] = int(row[2])
+        row[3] = round(float(row[3]))
+        row[4] = round(float(row[4]))
+        row[5] = round(float(row[5]))
+        row[6] = round(float(row[6]))
+        row[7] = round(float(row[7]))
+        row[8] = float(row[8])
+        row[9] = float(row[9])
+        row[10] = float(row[10])
+        self.yfdata.append(row)
+
+    def display_yf_table(self):
+        self.yf_proxyModel = QtCore.QSortFilterProxyModel(self)
+        self.yf_proxyModel.setFilterKeyColumn(0)
+        self.yf_proxyModel.sort(0, Qt.AscendingOrder)
+        self.yf_proxyModel.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        source_model = YFTableModel(self.yfdata, self.yfHeader)
+        self.yf_proxyModel.setSourceModel(source_model)
+        self.ui.yf_filter.textChanged.connect(self.yf_proxyModel.setFilterFixedString)
+        view = self.ui.yf_view
+        view.setModel(self.yf_proxyModel)
+        # view.selectionModel().selectionChanged.connect(self.display_filtered_transactions_and_dividends)
+        view.setWordWrap(True)
+        view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        for col in range(len(self.yfHeader)):
+            view.horizontalHeader().setSectionResizeMode(col, QtWidgets.QHeaderView.ResizeToContents)
+        view.horizontalHeader().setSectionResizeMode(11, QHeaderView.Stretch)
+        view.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        view.setStyleSheet(
+            "QTableView::item:selected{background-color: wheat; color: blue;};")
+        view.show()
+        view.setCurrentIndex(view.model().index(0, 0))
+
 
 def create_app():
     app = QApplication(sys.argv)
+
+    # trayIcon = QSystemTrayIcon(QtGui.QIcon('icon.png'), parent=app)
+    # trayIcon.setToolTip("Dividend Tracker")
+    # trayIcon.setVisible(True)
+    # trayIcon.show()
+
     win = Window()
     win.show()
     win.ui.summaryView.setFocus()

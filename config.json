@@ -2,7 +2,10 @@
   "path_prefix": "/home/iyerns/iyer/div",
   "out_path_prefix": "/home/iyerns/tmp/out",
   "path_prefix_linux": "/home/iyerns/tmp/PycharmProjects/pythonProject/tmp",
-  "main_font": "Ubuntu",
+  "main_font_": "Fira Code",
+  "main_font": "Roboto",
   "main_font_w": "Segoe UI",
-  "main_font_size": 10
+  "main_font_size": 10,
+  "input_file": "symbols.csv",
+  "output_file": "out.csv"
 }

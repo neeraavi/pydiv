@@ -71,7 +71,7 @@ class Grapher:
         ax3 = ax2.twinx()
         # ax3 = ax_bot
         x = np.arange(0, data_length, 1).tolist()
-        ax2.plot(x, c_div, color='g', alpha=0.4)
+        ax2.stackplot(x, c_div, color='g', alpha=0.2)
         ax2.yaxis.tick_right()
         # ax2.yaxis.set_label_position("right")
         ax2.tick_params(axis='y', labelcolor='g')

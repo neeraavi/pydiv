@@ -11,7 +11,11 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Dividend Tracker py-v20230421</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>icon.png</normaloff>icon.png</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QTabWidget" name="tabWidget">
@@ -183,7 +187,7 @@
        <rect>
         <x>460</x>
         <y>410</y>
-        <width>67</width>
+        <width>81</width>
         <height>17</height>
        </rect>
       </property>
@@ -204,7 +208,7 @@
      <widget class="QCheckBox" name="showClosedPositions">
       <property name="geometry">
        <rect>
-        <x>730</x>
+        <x>750</x>
         <y>400</y>
         <width>211</width>
         <height>23</height>
@@ -217,9 +221,9 @@
      <widget class="QCheckBox" name="searchAllColumns">
       <property name="geometry">
        <rect>
-        <x>550</x>
+        <x>560</x>
         <y>400</y>
-        <width>171</width>
+        <width>181</width>
         <height>23</height>
        </rect>
       </property>
@@ -368,10 +372,10 @@
        <bool>false</bool>
       </attribute>
       <attribute name="verticalHeaderMinimumSectionSize">
-       <number>16</number>
+       <number>10</number>
       </attribute>
       <attribute name="verticalHeaderDefaultSectionSize">
-       <number>21</number>
+       <number>12</number>
       </attribute>
      </widget>
      <widget class="QLabel" name="calendarDetailsMode">
@@ -456,17 +460,60 @@
       </property>
      </widget>
     </widget>
+    <widget class="QWidget" name="tab_4">
+     <attribute name="title">
+      <string>yf</string>
+     </attribute>
+     <widget class="QTableView" name="yf_view">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>0</y>
+        <width>1081</width>
+        <height>771</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <family>Ubuntu</family>
+        <pointsize>10</pointsize>
+       </font>
+      </property>
+      <property name="selectionMode">
+       <enum>QAbstractItemView::SingleSelection</enum>
+      </property>
+      <property name="selectionBehavior">
+       <enum>QAbstractItemView::SelectRows</enum>
+      </property>
+      <property name="sortingEnabled">
+       <bool>true</bool>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="yf_filter">
+      <property name="geometry">
+       <rect>
+        <x>880</x>
+        <y>780</y>
+        <width>211</width>
+        <height>30</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="yf_searchAllColumns">
+      <property name="geometry">
+       <rect>
+        <x>650</x>
+        <y>780</y>
+        <width>211</width>
+        <height>28</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>[F2] Search all columns</string>
+      </property>
+     </widget>
+    </widget>
    </widget>
-  </widget>
-  <widget class="QMenuBar" name="menubar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>1119</width>
-     <height>22</height>
-    </rect>
-   </property>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
